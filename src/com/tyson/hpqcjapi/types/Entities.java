@@ -77,12 +77,7 @@ public class Entities {
 
 
     public Entities(Entities entity) {
-        try {
-			count = "" + entity.Count();
-		} catch (NumberFormatException | ParseException e) {
-			Logger.logError(e.getMessage());
-			count = "" + entity.getEntities().size();
-		}
+		count = "" + entity.Count();
         entities = new ArrayList<Entity>(entity.getEntities());
     }
 
@@ -112,21 +107,11 @@ public class Entities {
     /**
      * Gets the value of the type property.
      *
-     * @return possible object is {@link String }
-     * @throws ParseException 
-     * @throws NumberFormatException 
+     * @return possible object is {@link Integer}
      *
      */
-    public int Count() throws NumberFormatException, ParseException {
-    	if (entities != null ) {
-			if (Integer.parseInt(count) == entities.size()) {
-				return Integer.parseInt(count);
-			} else {
-				throw( new ParseException("Meta count does not return matched count", Math.abs(Integer.parseInt(count) - entities.size())));
-			}
-    	} else {
-    		return 0;
-    	}
+    public int Count() {
+    	return Integer.parseInt(count);
     }
 
 }

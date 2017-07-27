@@ -18,7 +18,8 @@ public class ConnectionManagerTest {
 	 */
 	@Test
 	public void testConnectionManager() {
-		fail("Not yet implemented"); // TODO
+		fail("Not yet implemented"); 
+		
 	}
 
 	/**
