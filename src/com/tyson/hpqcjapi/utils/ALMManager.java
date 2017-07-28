@@ -11,7 +11,6 @@ import com.tyson.hpqcjapi.resources.Messages;
 import com.tyson.hpqcjapi.types.Entities;
 
 import infrastructure.Entity;
-import infrastructure.Entity.Fields;
 import infrastructure.Entity.Fields.Field;
 
 /**
@@ -35,10 +34,11 @@ import infrastructure.Entity.Fields.Field;
 public class ALMManager extends ConnectionManager {
 
 	public enum Response {
-		OK, RETRY, FAILURE, MISSING, DUPLICATE, VCERROR
+		OK, RETRY, FAILURE, MISSING, DUPLICATE, VCERROR, NOAUTH, NOPERM, BADINPUT
 	}
 
 	private Response responseStatus;
+	private Map<Response, String> errorResponseMap;
 
 	public ALMManager() {
 		super();
@@ -53,6 +53,20 @@ public class ALMManager extends ConnectionManager {
 			responseStatus = Response.FAILURE;
 		}
 		responseStatus = Response.OK;
+		
+		initErrorResponseMap();
+	}
+	
+	private void initErrorResponseMap() {
+		errorResponseMap = new HashMap<Response, String>();
+		errorResponseMap.put(Response.VCERROR, "qccore.check-in-failure");
+		errorResponseMap.put(Response.VCERROR, "qccore.check-out-failure");
+		errorResponseMap.put(Response.MISSING, "qccore.entity-not-found");
+		errorResponseMap.put(Response.VCERROR, "qccore.lock-failure");
+		errorResponseMap.put(Response.NOPERM, "qccore.operation-forbidden");
+		errorResponseMap.put(Response.NOAUTH, "qccore.session-has-expired");
+		errorResponseMap.put(Response.BADINPUT, "qccore.unknown-field-name");
+		errorResponseMap.put(Response.BADINPUT, "qccore.required-field-missing");
 	}
 
 	public Response getResponse() {
@@ -77,6 +91,10 @@ public class ALMManager extends ConnectionManager {
 
 	private Response genericResponseHandler(Object obj, Map<Response, String> responseMap) {
 		if (obj == null) {
+			if (lastResponse.getStatusCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
+				return Response.NOAUTH;
+			} 
+			
 			if (responseMap != null) {
 				for (Map.Entry<Response, String> entry : responseMap.entrySet()) {
 					if (lastResponseContains(entry.getValue())) {
@@ -84,6 +102,13 @@ public class ALMManager extends ConnectionManager {
 					}
 				}
 			}
+			
+			for (Map.Entry<Response, String> entry : errorResponseMap.entrySet()) {
+				if (lastResponseContains(entry.getValue())) {
+					return entry.getKey();
+				}
+			}
+			
 			return Response.FAILURE;
 		} else {
 			return Response.OK;
@@ -110,7 +135,7 @@ public class ALMManager extends ConnectionManager {
 
 	private Entities genericQueryCollection(String endpoint, Map<String, String> query,
 			Map<Response, String> responseMap) {
-		Entities entities = queryCollection(endpoint, query);
+		Entities entities = readCollection(endpoint, query);
 		responseStatus = genericResponseHandler(entities, responseMap);
 		return entities;
 	}
