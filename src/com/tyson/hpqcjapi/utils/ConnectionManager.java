@@ -394,10 +394,8 @@ public class ConnectionManager {
 	 * @return The matching entities, or null
 	 */
 	public Entities queryCollection(String endpoint, Map<String, String> queryParams) {
-		String collectionUrl = con.buildUrl(endpoint);
-
 		if (!isAuthenticated()) {
-			Logger.logWarning("Not authenticated, exiting queryCollection(" + collectionUrl + ")");
+			Logger.logWarning("Not authenticated, exiting queryCollection(" + endpoint + ")");
 			return null;
 		}
 		Map<String, String> requestHeaders = new HashMap<String, String>();
