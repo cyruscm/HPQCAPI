@@ -14,7 +14,7 @@ import infrastructure.Entity;
 import infrastructure.Entity.Fields.Field;
 
 /**
- * This specializes the ConnectionManager towards ALM 12.01 functions. However,
+ * This specializes the ConnectionManager towards ALM 12.01 functions with CRUD. However,
  * it does not specialize to use cases. Either create another layer or use
  * wrapper to have specific case applications. However, each utility context is
  * expected inside the method. Such as if a specific CRUD request requires
@@ -23,7 +23,8 @@ import infrastructure.Entity.Fields.Field;
  * modification. (This is also done to save the annoyance of null check for
  * updating).
  * 
- * INVARIANTS: 1. Response's and XML Mapped objects (entities/entity/etc) should
+ * INVARIANTS: 
+ * 1. XML Mapped objects (entities/entity/etc) should
  * be the only external receivable types.
  * 
  * 2. Every method with objects for output should use null to symbolize error.
@@ -43,6 +44,7 @@ public class ALMManager extends ConnectionManager {
 	public ALMManager() {
 		super();
 		responseStatus = Response.OK;
+		initErrorResponseMap();
 	}
 
 	public void init() {
@@ -54,7 +56,6 @@ public class ALMManager extends ConnectionManager {
 		}
 		responseStatus = Response.OK;
 		
-		initErrorResponseMap();
 	}
 	
 	private void initErrorResponseMap() {
@@ -80,7 +81,29 @@ public class ALMManager extends ConnectionManager {
 	// ================================================================================
 	// Generics
 	// ================================================================================
+	
+	private String mapToXMLString(Map<String, String> map) {
+		return mapToXMLString(map, "Entity", null);
+	}
 
+	private String mapToXMLString(Map<String, String> map, String subType) {
+		return mapToXMLString(map, "Entity, subType");
+	}
+	
+	private String mapToXMLString(Map<String, String> map, String type, String subType) {
+		XMLCreator xml = new XMLCreator(type, subType);
+		return appendMapToXML(xml, map).publish();
+	}
+	
+	private XMLCreator appendMapToXML(XMLCreator xml, Map<String, String> map) {
+		if (map != null) {
+			for (Map.Entry<String, String> param : map.entrySet()) {
+				xml.addField(param.getKey(), param.getValue());
+			}
+		}	
+		return xml;
+	}
+	
 	private boolean lastResponseContains(String message) {
 		if (lastResponse == null) {
 			return false;
@@ -132,8 +155,14 @@ public class ALMManager extends ConnectionManager {
 		responseStatus = genericResponseHandler(entity, responseMap);
 		return entity;
 	}
+	
+	private Entity genericDeleteEntity(String endpoint, Map<Response, String> responseMap) {
+		Entity entity = deleteEntity(endpoint);
+		responseStatus = genericResponseHandler(entity, responseMap);
+		return entity;
+	}
 
-	private Entities genericQueryCollection(String endpoint, Map<String, String> query,
+	private Entities genericReadCollection(String endpoint, Map<String, String> query,
 			Map<Response, String> responseMap) {
 		Entities entities = readCollection(endpoint, query);
 		responseStatus = genericResponseHandler(entities, responseMap);
@@ -144,7 +173,7 @@ public class ALMManager extends ConnectionManager {
 	// Tests
 	// ================================================================================
 
-	public Entity createTest(String name) {
+	public Entity createTest(String name, Map<String, String> extraParams) {
 		XMLCreator xml = new XMLCreator("Entity", "test");
 		xml.addField("name", name);
 		xml.addField("user-02", Config.getTeam());
@@ -152,7 +181,25 @@ public class ALMManager extends ConnectionManager {
 		xml.addField("parent-id", Config.getUnitTestFolderID());
 		xml.addField("subtype-id", "manual");
 
+		this.appendMapToXML(xml, extraParams);
+		
 		return genericCreateEntity(Endpoints.TESTS, xml.publish(), null);
+	}
+	
+	public Entity getTest(String id) {
+		return genericGetEntity(Endpoints.TEST(id), null);
+	}
+	
+	public Entity updateTest(String id, String postedEntityXML) {
+		return genericUpdateEntity(Endpoints.TEST(id), postedEntityXML, null);
+	}
+	
+	public Entity deleteTest(String id) {
+		return genericDeleteEntity(Endpoints.TEST(id), null);
+	}
+	
+	public Entities getTestCollection(Map<String, String> queryParameters) {
+		return genericReadCollection(Endpoints.TESTS, queryParameters, null);
 	}
 
 	public String getTestID(String name) {
@@ -160,12 +207,7 @@ public class ALMManager extends ConnectionManager {
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put("name", name);
 
-		Entities entities = genericQueryCollection(Endpoints.TESTS, queryParams, null);
-
-		if (entities == null) {
-			responseStatus = Response.FAILURE;
-			return null;
-		}
+		Entities entities = genericReadCollection(Endpoints.TESTS, queryParams, null);
 
 		if (entities.Count() == 0) {
 			Logger.logWarning("Test with name " + name + " doesn't exist. Please create one.");
@@ -189,7 +231,6 @@ public class ALMManager extends ConnectionManager {
 		}
 		return toReturn;
 	}
-
 	// ================================================================================
 	// Version Control and Tools
 	// ================================================================================
@@ -219,19 +260,7 @@ public class ALMManager extends ConnectionManager {
 	// Design Steps
 	// ================================================================================
 
-	public Entity updateDesignStep(String id, String postedEntityXml) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
-		return genericUpdateEntity(Endpoints.DESIGN_STEP(id), postedEntityXml, responseMap);
-	}
-
-	public Entity getDesignStep(String id) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
-		return genericGetEntity(Endpoints.DESIGN_STEP(id), responseMap);
-	}
-
-	public Entity createDesignStep(String name, String parentId, String description, String expected) {
+	public Entity createDesignStep(String name, String parentId, String description, String expected, Map<String, String> extraParams) {
 		Map<Response, String> responseMap = new HashMap<Response, String>();
 		responseMap.put(Response.VCERROR, Messages.VC_NOT_CHECKED_OUT);
 
@@ -240,51 +269,74 @@ public class ALMManager extends ConnectionManager {
 		xml.addField("parent-id", parentId);
 		xml.addField("description", description);
 		xml.addField("expected", expected);
+		
+		this.appendMapToXML(xml, extraParams);
 
 		return genericCreateEntity(Endpoints.DESIGN_STEPS, xml.publish(), responseMap);
 	}
 
+	public Entity getDesignStep(String id) {
+		Map<Response, String> responseMap = new HashMap<Response, String>();
+		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
+		return genericGetEntity(Endpoints.DESIGN_STEP(id), responseMap);
+	}
+	
+	public Entity updateDesignStep(String id, String postedEntityXml) {
+		Map<Response, String> responseMap = new HashMap<Response, String>();
+		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
+		return genericUpdateEntity(Endpoints.DESIGN_STEP(id), postedEntityXml, responseMap);
+	}
+	
+	public Entity deleteDesignStep(String id) {
+		return genericDeleteEntity(Endpoints.DESIGN_STEP(id), null);
+	}
+	
+	public Entities getDesignSteps(Map<String, String> queryParameters) {
+		return genericReadCollection(Endpoints.DESIGN_STEPS, queryParameters, null);
+	}
+
+	//TODO REPLACE ME
 	public Entities getCurrentDesignSteps(String testID) {
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put("test-id", testID);
-		return genericQueryCollection(Endpoints.DESIGN_STEPS, queryParams, null);
+		return genericReadCollection(Endpoints.DESIGN_STEPS, queryParams, null);
 	}
 
 	// ================================================================================
 	// Test Sets
 	// ================================================================================
 
-	public Entities queryTestSets(Map<String, String> queryParameters) {
-		return genericQueryCollection(Endpoints.TEST_SETS, queryParameters, null);
+	//TODO Find all needed vars
+	public Entity createTestSet(String name, Map<String, String> extraParams) {
+		XMLCreator xml = new XMLCreator("Entity", "test-set");
+		xml.addField("name", name);
+		
+		this.appendMapToXML(xml, extraParams);
+		
+		return genericCreateEntity(Endpoints.TEST_SETS, xml.publish(), null);
 	}
-
-	public Entities queryTestSetFolders(Map<String, String> queryParameters) {
-		return genericQueryCollection(Endpoints.TEST_SET_FOLDERS, queryParameters, null);
-	}
-
+	
 	public Entity getTestSet(String id) {
 		Map<Response, String> responseMap = new HashMap<Response, String>();
 		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
 		return genericGetEntity(Endpoints.TEST_SET(id), responseMap);
 	}
+	
+	
+	public Entities queryTestSets(Map<String, String> queryParameters) {
+		return genericReadCollection(Endpoints.TEST_SETS, queryParameters, null);
+	}
 
+	public Entities queryTestSetFolders(Map<String, String> queryParameters) {
+		return genericReadCollection(Endpoints.TEST_SET_FOLDERS, queryParameters, null);
+	}
+
+	
 	// ================================================================================
 	// Runs
 	// ================================================================================
 
-	public Entity updateRun(String parentId, String id, String postedEntityXml) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
-		return genericUpdateEntity(Endpoints.RUN_STEP(parentId, id), postedEntityXml, responseMap);
-	}
-
-	public Entity getRun(String parentId, String id) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
-		return genericGetEntity(Endpoints.RUN_STEP(parentId, id), responseMap);
-	}
-
-	public Entity addRun(String name, String parentId, String description, String expected) {
+	public Entity createRun(String name, String parentId, String description, String expected) {
 		Map<Response, String> responseMap = new HashMap<Response, String>();
 		responseMap.put(Response.VCERROR, Messages.VC_NOT_CHECKED_OUT);
 
@@ -294,30 +346,34 @@ public class ALMManager extends ConnectionManager {
 		xml.addField("description", description);
 		xml.addField("expected", expected);
 
-		return genericCreateEntity(Endpoints.DESIGN_STEPS, xml.publish(), responseMap);
+		return genericCreateEntity(Endpoints.RUNS, xml.publish(), responseMap);
+	}
+
+	public Entity getRun(String id) {
+		Map<Response, String> responseMap = new HashMap<Response, String>();
+		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
+		return genericGetEntity(Endpoints.RUN(id), responseMap);
+	}
+
+	public Entity updateRun(String id, String postedEntityXml) {
+		Map<Response, String> responseMap = new HashMap<Response, String>();
+		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
+		return genericUpdateEntity(Endpoints.RUN(id), postedEntityXml, responseMap);
+	}
+	
+	public Entity deleteRun(String id) {
+		return genericDeleteEntity(Endpoints.RUN(id), null);
 	}
 
 	public Entities queryRuns(Map<String, String> queryParameters) {
-		return genericQueryCollection(Endpoints.RUNS, queryParameters, null);
+		return genericReadCollection(Endpoints.RUNS, queryParameters, null);
 	}
 
 	// ================================================================================
 	// Run Steps
 	// ================================================================================
 
-	public Entity updateRunStep(String parentId, String id, String postedEntityXml) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
-		return genericUpdateEntity(Endpoints.RUN_STEP(parentId, id), postedEntityXml, responseMap);
-	}
-
-	public Entity getRunStep(String parentId, String id) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
-		return genericGetEntity(Endpoints.RUN_STEP(parentId, id), responseMap);
-	}
-
-	public Entity addRunStep(String name, String parentId, String description, String expected) {
+	public Entity createRunStep(String name, String parentId, String description, String expected) {
 		Map<Response, String> responseMap = new HashMap<Response, String>();
 		responseMap.put(Response.VCERROR, Messages.VC_NOT_CHECKED_OUT);
 
@@ -329,10 +385,26 @@ public class ALMManager extends ConnectionManager {
 		return genericCreateEntity(Endpoints.DESIGN_STEPS, xml.publish(), responseMap);
 	}
 
+	public Entity getRunStep(String parentId, String id) {
+		Map<Response, String> responseMap = new HashMap<Response, String>();
+		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
+		return genericGetEntity(Endpoints.RUN_STEP(parentId, id), responseMap);
+	}
+
+	public Entity updateRunStep(String parentId, String id, String postedEntityXml) {
+		Map<Response, String> responseMap = new HashMap<Response, String>();
+		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
+		return genericUpdateEntity(Endpoints.RUN_STEP(parentId, id), postedEntityXml, responseMap);
+	}
+	
+	public Entity deleteRunStep(String parentId, String id) {
+		return genericDeleteEntity(Endpoints.RUN_STEP(parentId, id), null);
+	}
+	
 	public Entities getCurrentRunSteps(String testID) {
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put("test-id", testID);
-		return genericQueryCollection(Endpoints.DESIGN_STEPS, queryParams, null);
+		return genericReadCollection(Endpoints.DESIGN_STEPS, queryParams, null);
 	}
 
 }

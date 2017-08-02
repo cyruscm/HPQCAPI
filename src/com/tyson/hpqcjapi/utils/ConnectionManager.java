@@ -315,7 +315,7 @@ public class ConnectionManager {
 	 *            entity to delete
 	 * @return The deleted entity, or null
 	 */
-	public Entity deleteEnity(String endpoint) {
+	public Entity deleteEntity(String endpoint) {
 		if (!isAuthenticated()) {
 			Logger.logWarning("Not authenticated, exiting updateEntity(" + endpoint + ")");
 			return null;
