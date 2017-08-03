@@ -73,28 +73,15 @@ public class ALMManager extends ConnectionManager {
 	public Response getResponse() {
 		return responseStatus;
 	}
+	
+	// ================================================================================
+	// Utilities 
+	// ================================================================================
 
 	public String URLToEndpoint(String URL) {
 		return URL.replaceFirst("(http|https)://" + Config.getHost() + "/qcbin/", "");
 	}
 
-	// ================================================================================
-	// Generics
-	// ================================================================================
-	
-	private String mapToXMLString(Map<String, String> map) {
-		return mapToXMLString(map, "Entity", null);
-	}
-
-	private String mapToXMLString(Map<String, String> map, String subType) {
-		return mapToXMLString(map, "Entity, subType");
-	}
-	
-	private String mapToXMLString(Map<String, String> map, String type, String subType) {
-		XMLCreator xml = new XMLCreator(type, subType);
-		return appendMapToXML(xml, map).publish();
-	}
-	
 	private XMLCreator appendMapToXML(XMLCreator xml, Map<String, String> map) {
 		if (map != null) {
 			for (Map.Entry<String, String> param : map.entrySet()) {
@@ -112,11 +99,17 @@ public class ALMManager extends ConnectionManager {
 		return (new String(lastResponse.getResponseData()).contains(message));
 	}
 
+	// ================================================================================
+	// Generics
+	// ================================================================================
+
 	private Response genericResponseHandler(Object obj, Map<Response, String> responseMap) {
 		if (obj == null) {
 			if (lastResponse.getStatusCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
 				return Response.NOAUTH;
-			} 
+			} else if (lastResponse.getStatusCode() == HttpURLConnection.HTTP_CREATED) {
+				return Response.OK;
+			}
 			
 			if (responseMap != null) {
 				for (Map.Entry<Response, String> entry : responseMap.entrySet()) {
@@ -209,6 +202,10 @@ public class ALMManager extends ConnectionManager {
 
 		Entities entities = genericReadCollection(Endpoints.TESTS, queryParams, null);
 
+		if (entities == null) {
+			return null;
+		}
+		
 		if (entities.Count() == 0) {
 			Logger.logWarning("Test with name " + name + " doesn't exist. Please create one.");
 			responseStatus = Response.MISSING;
@@ -298,7 +295,7 @@ public class ALMManager extends ConnectionManager {
 	//TODO REPLACE ME
 	public Entities getCurrentDesignSteps(String testID) {
 		Map<String, String> queryParams = new HashMap<String, String>();
-		queryParams.put("test-id", testID);
+		queryParams.put("parent-id", testID);
 		return genericReadCollection(Endpoints.DESIGN_STEPS, queryParams, null);
 	}
 

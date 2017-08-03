@@ -90,7 +90,7 @@ public class Entities {
      *
      */
     public List<Entity> getEntities() {
-        return entities;
+        return (entities == null) ? new ArrayList<Entity>() : entities;
     }
 
     /**

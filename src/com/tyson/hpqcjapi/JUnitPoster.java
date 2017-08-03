@@ -3,11 +3,11 @@ package com.tyson.hpqcjapi;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.tyson.hpqcjapi.types.Testsuites;
+import com.tyson.hpqcjapi.resources.Messages;
+import com.tyson.hpqcjapi.types.Entities;
+import com.tyson.hpqcjapi.types.LinkedTestCase;
 import com.tyson.hpqcjapi.utils.ALMManager;
-import com.tyson.hpqcjapi.utils.ALMManager.Response;
 import com.tyson.hpqcjapi.utils.Logger;
 
 import infrastructure.Entity;
@@ -19,16 +19,13 @@ public class JUnitPoster {
 	private ALMManager con;
 	private String name;
 	private String testId;
-	private Response lastCheckedResponse;
-	private List<Map<String, String>> testCases;
-	private Testsuites suites;
-	
+	private List<LinkedTestCase> cases;
+
 	public JUnitPoster(String name, JUnitReader results) {
 		this.name = name;
 		con = new ALMManager();
 		con.init();
-		suites = null;
-		testCases = new ArrayList<Map<String, String>>();
+		cases = results.parseSuites();
 	}
 	
 	private String getField(Entity entity, String fieldName) {
@@ -72,19 +69,88 @@ public class JUnitPoster {
 			return id;
 		}
 	}
-	
 
 	
+
 	private String createTest() {
 		Entity test = con.createTest(name, null);
 		return getField(test, "id");
 	}
 	
+	
+	
+	/**
+	 * Compares incoming JUnit tests to ALM tests and removes any ones no longer
+	 * in the JUnit and adds new ones. Note that there is no identity tracking at this time
+	 * so previous tests will be lost if the key changes. The key is the test classname + the test name
+	 */
+	public void syncTestSteps() {
+		Entities entities = con.getCurrentDesignSteps(testId);
+		List<Entity> entitiesList = new ArrayList<Entity>();
+		
+		entitiesList.addAll(entities.getEntities());
 
-	public HashMap<String, String> syncTestSteps() {
-		 
-		return null;
+		List<LinkedTestCase> casesList = new ArrayList<LinkedTestCase>();
+		casesList.addAll(cases);
+		
+		linkEqualCases(entitiesList, casesList);
+	
+		if (!entitiesList.isEmpty() || !casesList.isEmpty()) {
+			con.checkOutTest(testId);
+			if (!entitiesList.isEmpty()) {
+				removeEntities(entitiesList);
+			} 
+			if (!casesList.isEmpty()) {
+				createCaseEntities(casesList);
+			}
+			con.checkInTest(testId);
+		}
 	}
+	
+	/**
+	 * Creates design step for each LinkedTestCase in cases and links them. Does not remove them from the list
+	 * @param cases
+	 */
+	private void createCaseEntities(List<LinkedTestCase> cases) {
+		for (LinkedTestCase testCase : cases) {
+			Entity entity = con.createDesignStep(testCase.testSuite, testId, Messages.DESIGN_STEP_DESCRIPTION, testCase.getKey(), null);
+			testCase.linkToEntity(entity);
+		}
+	}
+
+	/**
+	 * Removes each Entity in entities. Does not remove them from the list.
+	 * @param entities
+	 */
+	private void removeEntities(List<Entity> entities) {
+		for (Entity entity : entities) {
+			con.deleteDesignStep(this.getField(entity, "id"));
+		}
+	}
+	
+	
+	/**
+	 * Removes entities and cases that are equal. Links the entities with the cases.
+	 * @param firstList List of entities
+	 * @param secondList List of cases to link with
+	 */
+	private void linkEqualCases(List<Entity> firstList, List<LinkedTestCase> secondList) {
+		for (int i = 0; i < firstList.size(); i++) {
+			Entity entity = firstList.get(i);
+			
+			for (int y = 0; y < secondList.size(); y++) {
+				LinkedTestCase testCase = secondList.get(y);
+				if (testCase.equals(entity)) {
+					testCase.linkToEntity(entity);
+					firstList.remove(i);
+					secondList.remove(y);
+					i--;
+					break;
+				}
+			}
+		}	
+	}
+	
 	
 	public String suggestedTestSet() {
 		//TODO Calculate which test set to use
@@ -108,6 +174,9 @@ public class JUnitPoster {
 		
 	}
 	
-	
+	@Override
+	public String toString() {
+		return cases.toString();
+	}
 
 }

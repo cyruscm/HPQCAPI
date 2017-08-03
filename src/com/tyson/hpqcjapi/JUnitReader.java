@@ -3,7 +3,7 @@ package com.tyson.hpqcjapi;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.JAXBException;
@@ -33,7 +33,7 @@ public class JUnitReader {
 	}
 	
 	public List<LinkedTestCase> parseSuites() {
-		List<LinkedTestCase> cases = new LinkedList<LinkedTestCase>(); 
+		List<LinkedTestCase> cases = new ArrayList<LinkedTestCase>(); 
 		for (Testsuite suite : suites.getTestsuite()) {
 			for (Testcase testcase : suite.getTestcase()) {
 				LinkedTestCase newcase = new LinkedTestCase(

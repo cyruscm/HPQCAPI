@@ -29,7 +29,7 @@ public class XMLCreator {
 	}
 	
 	public void addCustomValue(String name, String value) {
-		extras.add(String.format("<%s>%s</$s>", name, value, name));
+		extras.add(String.format("<%s>%s</%s>", name, value, name));
 	}
 	
 	public String publish() {

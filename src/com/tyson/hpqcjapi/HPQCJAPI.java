@@ -15,6 +15,7 @@ import org.apache.commons.cli.ParseException;
 
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.types.LinkedTestCase;
+import com.tyson.hpqcjapi.utils.Logger;
 
 import infrastructure.Constants;
 
@@ -105,17 +106,13 @@ public class HPQCJAPI {
     }
     
     public static void run() {
-    	String name = "AutomatedRestAPITest2";
+    	String name = "AutomatedRestAPITestWithDesignSteps2";
     	String path = "C:/Users/MARTINCORB/eclipse-workspace/HPQCJAPI/sampleJunit.xml";
     	JUnitReader reader = new JUnitReader(path);
-    	LinkedList<LinkedTestCase> cases = (LinkedList<LinkedTestCase>) reader.parseSuites();
-    	for (LinkedTestCase testCase : cases) {
-    		System.out.println("Suite: " + testCase.testSuite);
-    		System.out.println("className: " + testCase.classname);
-    		System.out.println("Name: " + testCase.name);
-    		System.out.println("Status Type: " + testCase.status.getTypeString());
-    		System.out.println("Status Message: " + testCase.status.getMessage());
-    	}
+    	JUnitPoster poster = new JUnitPoster(name, reader);
+    	Logger.logDebug(poster.toString());
+    	poster.prepareTest();
+    	Logger.logDebug(poster.toString());
     	
     }
 }

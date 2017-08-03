@@ -126,7 +126,6 @@ public class ConnectionManager {
 			Response response = con.httpGet(con.buildUrl(Endpoints.AUTHENTICATE), null, map);
 			lastResponse = response;
 
-			Logger.logDebug("Login returned status " + response.getStatusCode());
 			success = (response.getStatusCode() == HttpURLConnection.HTTP_OK);
 		} catch (Exception e) {
 			logError(Messages.UNEXPECTED_ERROR("login", Endpoints.AUTHENTICATE), e);
@@ -155,7 +154,6 @@ public class ConnectionManager {
 		try {
 			Response response = con.httpPost(QCSessionUrl, null, requestHeaders);
 			lastResponse = response;
-			Logger.logDebug("QCSession returned status " + response.getStatusCode());
 			success = (response.getStatusCode() == HttpURLConnection.HTTP_CREATED);
 		} catch (Exception e) {
 			logError(Messages.UNEXPECTED_ERROR("establishQCSession", Endpoints.SITE_SESSION), e);
@@ -208,21 +206,22 @@ public class ConnectionManager {
 		if (!isAuthenticated()) {
 			Logger.logWarning("Not authenticated, exiting createEntity(" + collectionUrl + ")");
 			return null;
-		} else {
-			Logger.logDebug("User credentials are still authenticated");
 		}
 
+		byte[] XmlBytes = null;
 		Map<String, String> requestHeaders = new HashMap<String, String>();
 		if (postedEntityXml != null && postedEntityXml.length() > 0) {
 			requestHeaders.put("Content-Type", "application/xml");
+			XmlBytes = postedEntityXml.getBytes();
 		}
 		requestHeaders.put("Accept", "application/xml");
-
+		
+		
 		Entity entity = null;
 		try {
-			Response response = con.httpPost(collectionUrl, postedEntityXml.getBytes(), requestHeaders);
+			Response response = con.httpPost(collectionUrl, XmlBytes, requestHeaders);
 			lastResponse = response;
-			if (response.getStatusCode() == HttpURLConnection.HTTP_OK) {
+			if (response.getStatusCode() == HttpURLConnection.HTTP_CREATED) {
 				entity = EntityMarshallingUtils.marshal(Entity.class, response.toString());
 			} else {
 				Logger.logError(Messages.INCORRECT_RESPONSE_CODE("Read Entity", "" + response.getStatusCode(),

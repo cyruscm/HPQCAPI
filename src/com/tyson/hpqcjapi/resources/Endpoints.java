@@ -4,14 +4,14 @@ package com.tyson.hpqcjapi.resources;
  * Created by MARTINCORB on 7/14/2017.
  */
 public class Endpoints {
-    private static final String BASE_ENDPOINT = String.format("rest/domain/%s/projects/%s/", Config.getDomain(), Config.getProject());
+    private static final String BASE_ENDPOINT = String.format("rest/domains/%s/projects/%s/", Config.getDomain(), Config.getProject());
 
     public static final String AUTHENTICATE = "authentication-point/authenticate";
     public static final String LOGOUT = "authentication-point/logout";
     public static final String IS_AUTHENTICATED = "rest/is-authenticated";
     public static final String SITE_SESSION = "rest/site-session";
     
-    public static final String DESIGN_STEPS = BASE_ENDPOINT + "run-steps";
+    public static final String DESIGN_STEPS = BASE_ENDPOINT + "design-steps";
     public static final String DESIGN_STEP(String id) { return DESIGN_STEPS + "/" + id;}
     
     public static final String TESTS = BASE_ENDPOINT + "tests";

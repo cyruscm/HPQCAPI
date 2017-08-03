@@ -22,6 +22,8 @@ public class Messages {
 	public static final String[] EXPECTED_SITE_SESSION_COOKIES = { "XSRF-TOKEN", "ALM_USER", "JSESSIONID",
 	"QCSession" };
 	
+	public static final String DESIGN_STEP_DESCRIPTION = "This is a symbolic step that should never be manually run. It is ran by an automated system.";
+	
 	
 
 }

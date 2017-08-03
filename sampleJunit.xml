@@ -10,7 +10,7 @@
       <testcase classname="JUnitXmlReporter.constructor" name="should default path to an empty string" time="0.006">
          <failure message="test failure">Assertion failed</failure>
       </testcase>
-      <testcase classname="JUnitXmlReporter.constructor" name="should default consolidate to true" time="0">
+      <testcase classname="JUnitXmlReporter.constructor" name="Hey look! I show up!" time="0">
          <skipped />
       </testcase>
       <testcase classname="JUnitXmlReporter.constructor" name="should default useDotNotation to true" time="0" />
