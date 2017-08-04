@@ -351,13 +351,6 @@ public class ConnectionManager {
 	 * @return The matching entities, or null
 	 */
 	public Entities readCollection(String endpoint, Map<String, String> queryParams) {
-		if (!isAuthenticated()) {
-			Logger.logWarning("Not authenticated, exiting readCollection(" + endpoint + ")");
-			return null;
-		}
-		Map<String, String> requestHeaders = new HashMap<String, String>();
-		requestHeaders.put("Accept", "application/xml");
-
 		String query = null;
 		if (queryParams != null && queryParams.size() > 0) {
 			StringBuilder b = new StringBuilder();
@@ -368,9 +361,22 @@ public class ConnectionManager {
 			query = b.toString();
 		}
 
+		return readCollection(endpoint, query);
+	}
+	
+	
+	public Entities readCollection(String endpoint, String queryString) {
+		if (!isAuthenticated()) {
+			Logger.logWarning("Not authenticated, exiting readCollection(" + endpoint + ")");
+			return null;
+		}
+		
+		Map<String, String> requestHeaders = new HashMap<String, String>();
+		requestHeaders.put("Accept", "application/xml");
+		
 		Entities entities = null;
 		try {
-			Response response = con.httpGet(con.buildUrl(endpoint), query, requestHeaders);
+			Response response = con.httpGet(con.buildUrl(endpoint), queryString, requestHeaders);
 			lastResponse = response;
 			if (response.getStatusCode() == HttpURLConnection.HTTP_OK) {
 				entities = EntityMarshallingUtils.marshal(Entities.class, response.toString());

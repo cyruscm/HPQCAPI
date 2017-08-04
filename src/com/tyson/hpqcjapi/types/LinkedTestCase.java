@@ -37,6 +37,7 @@ public class LinkedTestCase {
 		this.testSuite = testSuite;
 		this.className = className;
 		this.name = name;
+		this.status = status;
 	}
 	
 	public boolean equals(Object obj) {

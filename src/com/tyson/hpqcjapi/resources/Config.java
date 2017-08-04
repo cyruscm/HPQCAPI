@@ -14,6 +14,9 @@ public class Config {
     private static String Password;
     private static String Team;
     private static String UnitTestFolderID;
+    private static String testSetName;
+    private static String testSetID;
+    private static boolean guessTestSet;
 
     public static String getHost() { return Host; }
     public static String getPort() { return Port; }
@@ -23,6 +26,9 @@ public class Config {
     public static String getPassword() { return Password; }
     public static String getTeam() { return Team; }
     public static String getUnitTestFolderID() { return UnitTestFolderID; }
+    public static String getTestSetName() { return testSetName;} 
+    public static String getTestSetID() { return testSetID;} 
+    public static boolean guessTestSet() { return guessTestSet;}
 
     public static void initConfigs(String[] args) {
         Host = (args[0] != null) ? args[0] : Constants.HOST;
@@ -33,5 +39,7 @@ public class Config {
         Password = (args[5] != null) ? args[5] : Constants.PASSWORD;
         Team = "BI - BW";
         UnitTestFolderID = "1018";
+        guessTestSet = true;
+        testSetID = "102";
     }
 }

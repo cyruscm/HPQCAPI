@@ -236,11 +236,8 @@ public class ALMManager extends ConnectionManager {
 		}
 		
 		if (entities.Count() == 0) {
-			Logger.logWarning("Test with name " + name + " doesn't exist. Please create one.");
 			throw new HPALMRestMissingException(lastResponse);
 		} else if (entities.Count() > 1) {
-			Logger.logWarning(
-					"Test with name " + name + " has more than one matching test. Somethings probably broken.");
 			throw new HPALMRestDuplicateException(lastResponse);
 		} else {
 			List<Field> fields = entities.getEntities().get(0).getFields().getField();
@@ -350,7 +347,86 @@ public class ALMManager extends ConnectionManager {
 	public Entities queryTestSetFolders(Map<String, String> queryParameters) throws Exception {
 		return genericReadCollection(Endpoints.TEST_SET_FOLDERS, queryParameters, null);
 	}
+	
+	public String getTestSetID(String name) throws Exception {
+		Map<String, String> queryParams = new HashMap<String, String>();
+		queryParams.put("name", name);
 
+		Entities entities = genericReadCollection(Endpoints.TEST_SETS, queryParams, null);
+
+		if (entities == null) {
+			return null;
+		}
+		
+		if (entities.Count() == 0) {
+			throw new HPALMRestMissingException(lastResponse);
+		} else if (entities.Count() > 1) {
+			throw new HPALMRestDuplicateException(lastResponse);
+		} else {
+			List<Field> fields = entities.getEntities().get(0).getFields().getField();
+			for (Field field : fields) {
+				if (field.getName().equals("id")) {
+					return field.getValue().get(0);
+				}
+			}
+		}
+		throw new HPALMRestException(lastResponse);
+	}
+
+	// ================================================================================
+	// Test Sets
+	// ================================================================================
+
+	public Entity createTestInstance(String testSetId, String testId, String status, Map<String, String> extraParams) throws Exception {
+		XMLCreator xml = new XMLCreator("Entity", "test-set");
+		xml.addField("cycle-id", testSetId);
+		xml.addField("test-id", testId);
+		xml.addField("status", status);
+		xml.addField("test-order", "1");
+		xml.addField("subtype-id", "hp.qc.test-instance.manual");
+		
+		this.appendMapToXML(xml, extraParams);
+		
+		return genericCreateEntity(Endpoints.TEST_INSTANCES, xml.publish(), null);
+	}
+	
+	public Entity getTestInstance(String id) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestMissingException.class, Messages.ENTITY_MISSING);
+		return genericGetEntity(Endpoints.TEST_INSTANCE(id), responseMap);
+	}
+	
+	
+	public Entities queryTestInstances(Map<String, String> queryParameters) throws Exception {
+		return genericReadCollection(Endpoints.TEST_INSTANCES, queryParameters, null);
+	}
+	
+	public String getTestInstanceId(String testSetId, String testId) throws Exception {
+	Map<String, String> queryParams = new HashMap<String, String>();
+	queryParams.put("cycle-id", testSetId);
+	queryParams.put("test-id", testId);
+
+	Entities entities = genericReadCollection(Endpoints.TEST_INSTANCES, queryParams, null);
+
+	if (entities == null) {
+		return null;
+	}
+	
+	if (entities.Count() == 0) {
+		throw new HPALMRestMissingException(lastResponse);
+	} else if (entities.Count() > 1) {
+		throw new HPALMRestDuplicateException(lastResponse);
+	} else {
+		List<Field> fields = entities.getEntities().get(0).getFields().getField();
+		for (Field field : fields) {
+			if (field.getName().equals("id")) {
+				return field.getValue().get(0);
+			}
+		}
+	}
+	throw new HPALMRestException(lastResponse);
+}
+	
 	
 	// ================================================================================
 	// Runs
@@ -387,6 +463,22 @@ public class ALMManager extends ConnectionManager {
 
 	public Entities queryRuns(Map<String, String> queryParameters) throws Exception {
 		return genericReadCollection(Endpoints.RUNS, queryParameters, null);
+	}
+	
+	/**
+	 * Gets the last run completed
+	 * 
+	 * Note: this is a special scenario as it should be the only time a non query-clause is used. If another one
+	 * is needed at a later date, I highly suggest modifying queryCollection to support other clauses.
+	 * @return Entity of latest run
+	 * @throws Exception 
+	 */
+	public Entity getLatestRun() throws Exception {
+		String queryString = "order-by={id[desc]}?page-size=1";
+		Entities entities = readCollection(Endpoints.RUNS, queryString);
+		genericResponseHandler(entities, null);
+
+		return (entities.Count() > 0) ? entities.getEntities().get(0) : null;
 	}
 
 	// ================================================================================
