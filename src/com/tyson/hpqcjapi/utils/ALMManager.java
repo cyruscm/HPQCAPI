@@ -1,10 +1,19 @@
 package com.tyson.hpqcjapi.utils;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.tyson.hpqcjapi.exceptions.HPALMRestAuthException;
+import com.tyson.hpqcjapi.exceptions.HPALMRestDuplicateException;
+import com.tyson.hpqcjapi.exceptions.HPALMRestException;
+import com.tyson.hpqcjapi.exceptions.HPALMRestMissingException;
+import com.tyson.hpqcjapi.exceptions.HPALMRestPermException;
+import com.tyson.hpqcjapi.exceptions.HPALMRestVCException;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Endpoints;
 import com.tyson.hpqcjapi.resources.Messages;
@@ -12,6 +21,7 @@ import com.tyson.hpqcjapi.types.Entities;
 
 import infrastructure.Entity;
 import infrastructure.Entity.Fields.Field;
+import infrastructure.Response;
 
 /**
  * This specializes the ConnectionManager towards ALM 12.01 functions with CRUD. However,
@@ -34,45 +44,28 @@ import infrastructure.Entity.Fields.Field;
  */
 public class ALMManager extends ConnectionManager {
 
-	public enum Response {
-		OK, RETRY, FAILURE, MISSING, DUPLICATE, VCERROR, NOAUTH, NOPERM, BADINPUT
-	}
-
-	private Response responseStatus;
-	private Map<Response, String> errorResponseMap;
+	private Map<Class<? extends Exception>, String> errorResponseMap;
 
 	public ALMManager() {
 		super();
-		responseStatus = Response.OK;
 		initErrorResponseMap();
 	}
 
 	public void init() {
-		try {
-			this.validatedLogin();
-		} catch (RuntimeException e) {
-			e.printStackTrace();
-			responseStatus = Response.FAILURE;
-		}
-		responseStatus = Response.OK;
+		this.validatedLogin();
 		
 	}
 	
 	private void initErrorResponseMap() {
-		errorResponseMap = new HashMap<Response, String>();
-		errorResponseMap.put(Response.VCERROR, "qccore.check-in-failure");
-		errorResponseMap.put(Response.VCERROR, "qccore.check-out-failure");
-		errorResponseMap.put(Response.MISSING, "qccore.entity-not-found");
-		errorResponseMap.put(Response.VCERROR, "qccore.lock-failure");
-		errorResponseMap.put(Response.NOPERM, "qccore.operation-forbidden");
-		errorResponseMap.put(Response.NOAUTH, "qccore.session-has-expired");
-		errorResponseMap.put(Response.BADINPUT, "qccore.unknown-field-name");
-		errorResponseMap.put(Response.BADINPUT, "qccore.required-field-missing");
+		errorResponseMap = new HashMap<Class<? extends Exception>, String>();
+		errorResponseMap.put(HPALMRestVCException.class, "qccore.check-in-failure");
+		errorResponseMap.put(HPALMRestVCException.class, "qccore.check-out-failure");
+		errorResponseMap.put(HPALMRestMissingException.class, "qccore.entity-not-found");
+		errorResponseMap.put(HPALMRestVCException.class, "qccore.lock-failure");
+		errorResponseMap.put(HPALMRestPermException.class, "qccore.operation-forbidden");
+		errorResponseMap.put(HPALMRestAuthException.class, "qccore.session-has-expired");
 	}
 
-	public Response getResponse() {
-		return responseStatus;
-	}
 	
 	// ================================================================================
 	// Utilities 
@@ -103,62 +96,99 @@ public class ALMManager extends ConnectionManager {
 	// Generics
 	// ================================================================================
 
-	private Response genericResponseHandler(Object obj, Map<Response, String> responseMap) {
+	private Class<? extends Exception> getPossibleError(Object obj, Map<Class<? extends Exception>, String> responseMap) {
 		if (obj == null) {
 			if (lastResponse.getStatusCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-				return Response.NOAUTH;
+				return HPALMRestAuthException.class;
 			} else if (lastResponse.getStatusCode() == HttpURLConnection.HTTP_CREATED) {
-				return Response.OK;
+				return null;
 			}
 			
 			if (responseMap != null) {
-				for (Map.Entry<Response, String> entry : responseMap.entrySet()) {
+				for (Map.Entry<Class<? extends Exception>, String> entry : responseMap.entrySet()) {
 					if (lastResponseContains(entry.getValue())) {
 						return entry.getKey();
 					}
 				}
 			}
 			
-			for (Map.Entry<Response, String> entry : errorResponseMap.entrySet()) {
+			for (Map.Entry<Class<? extends Exception>, String> entry : errorResponseMap.entrySet()) {
 				if (lastResponseContains(entry.getValue())) {
 					return entry.getKey();
 				}
 			}
 			
-			return Response.FAILURE;
+			return HPALMRestException.class;
 		} else {
-			return Response.OK;
+			return null;
 		}
 	}
+	
+	private void genericResponseHandler(Object entity, Map<Class<? extends Exception>, String> responseMap) throws Exception {
+		Class<? extends Exception> exceptionClass = getPossibleError(entity, responseMap);
+		
+		if (exceptionClass == null) {
+			return;
+		}
+		
+		Exception exception = null;
+		
+		// Check if the exceptionClass has a constructor that takes a response. Else use default constructor
+		for (Constructor<?> constructor : exceptionClass.getConstructors()) {
+			Type[] paramTypes = constructor.getGenericParameterTypes();
+			if (paramTypes.length == 1 && paramTypes[0] instanceof infrastructure.Response) {
+				try {
+					exception = (Exception) constructor.newInstance(lastResponse);
+				} catch (Exception e) {
+					Logger.logError("There was an exception in creating an exception from an exception class " + exceptionClass.getName());
+					e.printStackTrace();
+					System.exit(0);
+				}
+				continue;
+			}
+		}
+		
+		if (exception == null) {
+			try {
+				exception = exceptionClass.newInstance();
+			} catch (Exception e) {
+				Logger.logError("There was an exception in creating an exception from an exception class " + exceptionClass.getName());
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+		
+		throw exception;
+	}
 
-	private Entity genericCreateEntity(String endpoint, String xml, Map<Response, String> responseMap) {
+	private Entity genericCreateEntity(String endpoint, String xml, Map<Class<? extends Exception>, String> responseMap) throws Exception {
 		Entity entity = createEntity(endpoint, xml);
-		responseStatus = genericResponseHandler(entity, responseMap);
+		genericResponseHandler(entity, responseMap);
 		return entity;
 	}
 
-	private Entity genericGetEntity(String endpoint, Map<Response, String> responseMap) {
+	private Entity genericGetEntity(String endpoint, Map<Class<? extends Exception>, String> responseMap) throws Exception {
 		Entity entity = readEntity(endpoint);
-		responseStatus = genericResponseHandler(entity, responseMap);
+		genericResponseHandler(entity, responseMap);
 		return entity;
 	}
 
-	private Entity genericUpdateEntity(String endpoint, String xml, Map<Response, String> responseMap) {
+	private Entity genericUpdateEntity(String endpoint, String xml, Map<Class<? extends Exception>, String> responseMap) throws Exception {
 		Entity entity = updateEntity(endpoint, xml);
-		responseStatus = genericResponseHandler(entity, responseMap);
+		genericResponseHandler(entity, responseMap);
 		return entity;
 	}
 	
-	private Entity genericDeleteEntity(String endpoint, Map<Response, String> responseMap) {
+	private Entity genericDeleteEntity(String endpoint, Map<Class<? extends Exception>, String> responseMap) throws Exception {
 		Entity entity = deleteEntity(endpoint);
-		responseStatus = genericResponseHandler(entity, responseMap);
+		genericResponseHandler(entity, responseMap);
 		return entity;
 	}
 
 	private Entities genericReadCollection(String endpoint, Map<String, String> query,
-			Map<Response, String> responseMap) {
+			Map<Class<? extends Exception>, String> responseMap) throws Exception {
 		Entities entities = readCollection(endpoint, query);
-		responseStatus = genericResponseHandler(entities, responseMap);
+		genericResponseHandler(entities, responseMap);
 		return entities;
 	}
 
@@ -166,7 +196,7 @@ public class ALMManager extends ConnectionManager {
 	// Tests
 	// ================================================================================
 
-	public Entity createTest(String name, Map<String, String> extraParams) {
+	public Entity createTest(String name, Map<String, String> extraParams) throws Exception {
 		XMLCreator xml = new XMLCreator("Entity", "test");
 		xml.addField("name", name);
 		xml.addField("user-02", Config.getTeam());
@@ -179,24 +209,23 @@ public class ALMManager extends ConnectionManager {
 		return genericCreateEntity(Endpoints.TESTS, xml.publish(), null);
 	}
 	
-	public Entity getTest(String id) {
+	public Entity getTest(String id) throws Exception {
 		return genericGetEntity(Endpoints.TEST(id), null);
 	}
 	
-	public Entity updateTest(String id, String postedEntityXML) {
+	public Entity updateTest(String id, String postedEntityXML) throws Exception {
 		return genericUpdateEntity(Endpoints.TEST(id), postedEntityXML, null);
 	}
 	
-	public Entity deleteTest(String id) {
+	public Entity deleteTest(String id) throws Exception {
 		return genericDeleteEntity(Endpoints.TEST(id), null);
 	}
 	
-	public Entities getTestCollection(Map<String, String> queryParameters) {
+	public Entities getTestCollection(Map<String, String> queryParameters) throws Exception {
 		return genericReadCollection(Endpoints.TESTS, queryParameters, null);
 	}
 
-	public String getTestID(String name) {
-		String toReturn = null;
+	public String getTestID(String name) throws Exception {
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put("name", name);
 
@@ -208,39 +237,34 @@ public class ALMManager extends ConnectionManager {
 		
 		if (entities.Count() == 0) {
 			Logger.logWarning("Test with name " + name + " doesn't exist. Please create one.");
-			responseStatus = Response.MISSING;
-			toReturn = null;
+			throw new HPALMRestMissingException(lastResponse);
 		} else if (entities.Count() > 1) {
 			Logger.logWarning(
 					"Test with name " + name + " has more than one matching test. Somethings probably broken.");
-			responseStatus = Response.DUPLICATE;
-			toReturn = null;
+			throw new HPALMRestDuplicateException(lastResponse);
 		} else {
 			List<Field> fields = entities.getEntities().get(0).getFields().getField();
-			responseStatus = Response.FAILURE;
 			for (Field field : fields) {
 				if (field.getName().equals("id")) {
-					toReturn = field.getValue().get(0);
-					responseStatus = Response.OK;
-					break;
+					return field.getValue().get(0);
 				}
 			}
 		}
-		return toReturn;
+		throw new HPALMRestException(lastResponse);
 	}
 	// ================================================================================
 	// Version Control and Tools
 	// ================================================================================
 
-	public boolean checkInTest(String testID) {
+	public boolean checkInTest(String testID) throws Exception {
 		return genericVersionControl(testID, Endpoints.CHECKIN_TEST(testID), null);
 	}
 
-	public boolean checkOutTest(String testID) {
+	public boolean checkOutTest(String testID) throws Exception {
 		return genericVersionControl(testID, Endpoints.CHECKOUT_TEST(testID), Messages.CHECKOUT_MESSAGE);
 	}
 
-	private boolean genericVersionControl(String testID, String endpoint, String comment) {
+	private boolean genericVersionControl(String testID, String endpoint, String comment) throws Exception {
 		String data = null;
 
 		if (comment != null) {
@@ -250,16 +274,16 @@ public class ALMManager extends ConnectionManager {
 		}
 
 		genericCreateEntity(endpoint, data, null);
-		return (getResponse() == Response.OK);
+		return (lastResponse.getStatusCode() == HttpURLConnection.HTTP_CREATED);
 	}
 
 	// ================================================================================
 	// Design Steps
 	// ================================================================================
 
-	public Entity createDesignStep(String name, String parentId, String description, String expected, Map<String, String> extraParams) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.VC_NOT_CHECKED_OUT);
+	public Entity createDesignStep(String name, String parentId, String description, String expected, Map<String, String> extraParams) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestVCException.class, Messages.VC_NOT_CHECKED_OUT);
 
 		XMLCreator xml = new XMLCreator("Entity", "design-step");
 		xml.addField("name", name);
@@ -272,28 +296,27 @@ public class ALMManager extends ConnectionManager {
 		return genericCreateEntity(Endpoints.DESIGN_STEPS, xml.publish(), responseMap);
 	}
 
-	public Entity getDesignStep(String id) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
+	public Entity getDesignStep(String id) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestMissingException.class, Messages.ENTITY_MISSING);
 		return genericGetEntity(Endpoints.DESIGN_STEP(id), responseMap);
 	}
 	
-	public Entity updateDesignStep(String id, String postedEntityXml) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
+	public Entity updateDesignStep(String id, String postedEntityXml) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestMissingException.class, Messages.DESIGN_NOT_CHECKED_OUT);
 		return genericUpdateEntity(Endpoints.DESIGN_STEP(id), postedEntityXml, responseMap);
 	}
 	
-	public Entity deleteDesignStep(String id) {
+	public Entity deleteDesignStep(String id) throws Exception {
 		return genericDeleteEntity(Endpoints.DESIGN_STEP(id), null);
 	}
 	
-	public Entities getDesignSteps(Map<String, String> queryParameters) {
+	public Entities getDesignSteps(Map<String, String> queryParameters) throws Exception {
 		return genericReadCollection(Endpoints.DESIGN_STEPS, queryParameters, null);
 	}
 
-	//TODO REPLACE ME
-	public Entities getCurrentDesignSteps(String testID) {
+	public Entities getCurrentDesignSteps(String testID) throws Exception {
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put("parent-id", testID);
 		return genericReadCollection(Endpoints.DESIGN_STEPS, queryParams, null);
@@ -304,7 +327,7 @@ public class ALMManager extends ConnectionManager {
 	// ================================================================================
 
 	//TODO Find all needed vars
-	public Entity createTestSet(String name, Map<String, String> extraParams) {
+	public Entity createTestSet(String name, Map<String, String> extraParams) throws Exception {
 		XMLCreator xml = new XMLCreator("Entity", "test-set");
 		xml.addField("name", name);
 		
@@ -313,18 +336,18 @@ public class ALMManager extends ConnectionManager {
 		return genericCreateEntity(Endpoints.TEST_SETS, xml.publish(), null);
 	}
 	
-	public Entity getTestSet(String id) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
+	public Entity getTestSet(String id) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestMissingException.class, Messages.ENTITY_MISSING);
 		return genericGetEntity(Endpoints.TEST_SET(id), responseMap);
 	}
 	
 	
-	public Entities queryTestSets(Map<String, String> queryParameters) {
+	public Entities queryTestSets(Map<String, String> queryParameters) throws Exception {
 		return genericReadCollection(Endpoints.TEST_SETS, queryParameters, null);
 	}
 
-	public Entities queryTestSetFolders(Map<String, String> queryParameters) {
+	public Entities queryTestSetFolders(Map<String, String> queryParameters) throws Exception {
 		return genericReadCollection(Endpoints.TEST_SET_FOLDERS, queryParameters, null);
 	}
 
@@ -333,9 +356,9 @@ public class ALMManager extends ConnectionManager {
 	// Runs
 	// ================================================================================
 
-	public Entity createRun(String name, String parentId, String description, String expected) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.VC_NOT_CHECKED_OUT);
+	public Entity createRun(String name, String parentId, String description, String expected) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestVCException.class, Messages.VC_NOT_CHECKED_OUT);
 
 		XMLCreator xml = new XMLCreator("Entity", "run");
 		xml.addField("name", name);
@@ -346,23 +369,23 @@ public class ALMManager extends ConnectionManager {
 		return genericCreateEntity(Endpoints.RUNS, xml.publish(), responseMap);
 	}
 
-	public Entity getRun(String id) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
+	public Entity getRun(String id) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestMissingException.class, Messages.ENTITY_MISSING);
 		return genericGetEntity(Endpoints.RUN(id), responseMap);
 	}
 
-	public Entity updateRun(String id, String postedEntityXml) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
+	public Entity updateRun(String id, String postedEntityXml) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestVCException.class, Messages.DESIGN_NOT_CHECKED_OUT);
 		return genericUpdateEntity(Endpoints.RUN(id), postedEntityXml, responseMap);
 	}
 	
-	public Entity deleteRun(String id) {
+	public Entity deleteRun(String id) throws Exception {
 		return genericDeleteEntity(Endpoints.RUN(id), null);
 	}
 
-	public Entities queryRuns(Map<String, String> queryParameters) {
+	public Entities queryRuns(Map<String, String> queryParameters) throws Exception {
 		return genericReadCollection(Endpoints.RUNS, queryParameters, null);
 	}
 
@@ -370,9 +393,9 @@ public class ALMManager extends ConnectionManager {
 	// Run Steps
 	// ================================================================================
 
-	public Entity createRunStep(String name, String parentId, String description, String expected) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.VC_NOT_CHECKED_OUT);
+	public Entity createRunStep(String name, String parentId, String description, String expected) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestVCException.class, Messages.VC_NOT_CHECKED_OUT);
 
 		XMLCreator xml = new XMLCreator("Entity", "run-step");
 		xml.addField("name", name);
@@ -382,23 +405,23 @@ public class ALMManager extends ConnectionManager {
 		return genericCreateEntity(Endpoints.DESIGN_STEPS, xml.publish(), responseMap);
 	}
 
-	public Entity getRunStep(String parentId, String id) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.MISSING, Messages.ENTITY_MISSING);
+	public Entity getRunStep(String parentId, String id) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestMissingException.class, Messages.ENTITY_MISSING);
 		return genericGetEntity(Endpoints.RUN_STEP(parentId, id), responseMap);
 	}
 
-	public Entity updateRunStep(String parentId, String id, String postedEntityXml) {
-		Map<Response, String> responseMap = new HashMap<Response, String>();
-		responseMap.put(Response.VCERROR, Messages.DESIGN_NOT_CHECKED_OUT);
+	public Entity updateRunStep(String parentId, String id, String postedEntityXml) throws Exception {
+		Map<Class<? extends Exception>, String> responseMap = new HashMap<Class<? extends Exception>, String>();
+		responseMap.put(HPALMRestVCException.class, Messages.DESIGN_NOT_CHECKED_OUT);
 		return genericUpdateEntity(Endpoints.RUN_STEP(parentId, id), postedEntityXml, responseMap);
 	}
 	
-	public Entity deleteRunStep(String parentId, String id) {
+	public Entity deleteRunStep(String parentId, String id) throws Exception {
 		return genericDeleteEntity(Endpoints.RUN_STEP(parentId, id), null);
 	}
 	
-	public Entities getCurrentRunSteps(String testID) {
+	public Entities getCurrentRunSteps(String testID) throws Exception {
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put("test-id", testID);
 		return genericReadCollection(Endpoints.DESIGN_STEPS, queryParams, null);

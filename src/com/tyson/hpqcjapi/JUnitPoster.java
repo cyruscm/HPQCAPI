@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.tyson.hpqcjapi.exceptions.HPALMRestMissingException;
 import com.tyson.hpqcjapi.resources.Messages;
 import com.tyson.hpqcjapi.types.Entities;
 import com.tyson.hpqcjapi.types.LinkedTestCase;
@@ -46,34 +47,28 @@ public class JUnitPoster {
 	}
 	
 	private String getTestId() {
-		String id = con.getTestID(name);
-		if (id == null) {
-			switch(con.getResponse()) {
-			case DUPLICATE:
-				Logger.logError("Duplicate tests were found. This is a fundamental error. Manual steps required. Either remove one of the duplicates or rename the test.");
-				return null;
-			case MISSING:
-				return createTest();
-			case NOAUTH:
-				return null; //TODO FIXME
-			case NOPERM:
-				Logger.logError("The specified account does not have permission to query tests.");
-				return null;
-			case RETRY:
-				return null; //TODO FIXME
-			default:
-				Logger.logError("An unexpected error occured, last response was " + con.getResponse().name());
-				return null;
-			}
-		} else {
-			return id;
+		try {
+			return con.getTestID(name);
+		} catch (HPALMRestMissingException e) {
+			return createTest();
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(0);
 		}
+		return null;
 	}
-
 	
 
 	private String createTest() {
-		Entity test = con.createTest(name, null);
+		Entity test;
+		try {
+			test = con.createTest(name, null);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.exit(0);
+			return null;
+		}
 		return getField(test, "id");
 	}
 	
@@ -85,7 +80,15 @@ public class JUnitPoster {
 	 * so previous tests will be lost if the key changes. The key is the test classname + the test name
 	 */
 	public void syncTestSteps() {
-		Entities entities = con.getCurrentDesignSteps(testId);
+		Entities entities;
+		try {
+			entities = con.getCurrentDesignSteps(testId);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.exit(0);
+			return;
+		}
 		List<Entity> entitiesList = new ArrayList<Entity>();
 		
 		entitiesList.addAll(entities.getEntities());
@@ -96,14 +99,26 @@ public class JUnitPoster {
 		linkEqualCases(entitiesList, casesList);
 	
 		if (!entitiesList.isEmpty() || !casesList.isEmpty()) {
-			con.checkOutTest(testId);
+			try {
+				con.checkOutTest(testId);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.exit(0);
+			}
 			if (!entitiesList.isEmpty()) {
 				removeEntities(entitiesList);
 			} 
 			if (!casesList.isEmpty()) {
 				createCaseEntities(casesList);
 			}
-			con.checkInTest(testId);
+			try {
+				con.checkInTest(testId);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.exit(0);
+			}
 		}
 	}
 	
@@ -113,7 +128,14 @@ public class JUnitPoster {
 	 */
 	private void createCaseEntities(List<LinkedTestCase> cases) {
 		for (LinkedTestCase testCase : cases) {
-			Entity entity = con.createDesignStep(testCase.testSuite, testId, Messages.DESIGN_STEP_DESCRIPTION, testCase.getKey(), null);
+			Entity entity = null;
+			try {
+				entity = con.createDesignStep(testCase.testSuite, testId, Messages.DESIGN_STEP_DESCRIPTION, testCase.getKey(), null);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.exit(0);
+			}
 			testCase.linkToEntity(entity);
 		}
 	}
@@ -124,7 +146,12 @@ public class JUnitPoster {
 	 */
 	private void removeEntities(List<Entity> entities) {
 		for (Entity entity : entities) {
-			con.deleteDesignStep(this.getField(entity, "id"));
+			try {
+				con.deleteDesignStep(this.getField(entity, "id"));
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(0);
+			}
 		}
 	}
 	

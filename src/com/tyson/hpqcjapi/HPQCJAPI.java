@@ -106,7 +106,7 @@ public class HPQCJAPI {
     }
     
     public static void run() {
-    	String name = "AutomatedRestAPITestWithDesignSteps2";
+    	String name = "AutomatedRestAPITestWithDesignSteps3";
     	String path = "C:/Users/MARTINCORB/eclipse-workspace/HPQCJAPI/sampleJunit.xml";
     	JUnitReader reader = new JUnitReader(path);
     	JUnitPoster poster = new JUnitPoster(name, reader);
