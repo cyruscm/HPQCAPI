@@ -111,8 +111,10 @@ public class HPQCJAPI {
     	JUnitReader reader = new JUnitReader(path);
     	JUnitPoster poster = new JUnitPoster(name, reader);
     	Logger.logDebug(poster.toString());
-    	poster.prepareTest();
+    	poster.publishTest();
     	Logger.logDebug(poster.toString());
+    	
+    	Logger.logDebug("fin");
     	
     }
 }

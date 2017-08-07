@@ -27,6 +27,7 @@ public class JUnitPoster {
 	private String testSetId;
 	private String testInstanceId;
 	private String sumStatus;
+	private String runId;
 	
 	private List<LinkedTestCase> cases;
 
@@ -43,9 +44,6 @@ public class JUnitPoster {
 	
 	private String calcSumStatus() {
 		boolean failedTestExists = false;
-		for (LinkedTestCase testCase : cases) {
-			Logger.logDebug(testCase.status.toString());
-		}
 		
 		for (LinkedTestCase testCase : cases) {
 			if (testCase.status.getType().equals(TestStatus.STATUS_TYPE.FAILED)) {
@@ -54,7 +52,7 @@ public class JUnitPoster {
 			}
 		}
 		
-		return (failedTestExists) ? "Passed" : "Failed";
+		return (failedTestExists) ? "Failed" : "Passed";
 	}
 	
 	private String getField(Entity entity, String fieldName) {
@@ -68,11 +66,13 @@ public class JUnitPoster {
 	}
 	
 	
-	public String prepareTest() {
+	public void publishTest() {
 		testId = getTestId();
 		syncTestSteps();
-		prepareTestSet();
-		return testId;
+		testSetId = suggestedTestSet();
+		testInstanceId = getTestInstanceId();
+		runId = createRun();
+		addRunSteps();
 	}
 	
 	private String getTestId() {
@@ -207,11 +207,6 @@ public class JUnitPoster {
 		}	
 	}
 	
-	private void prepareTestSet() {
-		testSetId = suggestedTestSet();
-		testInstanceId = getTestInstanceId();
-	}
-	
 	private String suggestedTestSet() {
 		if (isValidString(Config.getTestSetID())) {
 			if (verifyTestSetIdExists(Config.getTestSetID())) {
@@ -278,8 +273,10 @@ public class JUnitPoster {
 	}
 	
 	public String getTestInstanceId() {
+		Logger.logDebug("Getting test instance");
 		try {
-			return con.getTestInstanceId(testSetId, testId);
+			String testInstanceId = con.getTestInstanceId(testSetId, testId);
+			return testInstanceId;
 		} catch (HPALMRestMissingException e) {
 			return createTestInstance();
 		} catch (Exception e) {
@@ -292,8 +289,9 @@ public class JUnitPoster {
 
 	private String createTestInstance() {
 		Entity test;
+		Logger.logDebug("Test instance does not exist, creating");
 		try {
-			test = con.createTestInstance(testSetId, testId, sumStatus, null);
+			test = con.createTestInstance(testSetId, testId, null);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -303,17 +301,49 @@ public class JUnitPoster {
 		return getField(test, "id");
 	}	
 	
-	public String createRun(String instanceId) {
-		return null;
+	private String createRun() {
+		String runId = null;
+		try {
+			runId = getField(con.createRun(name, testInstanceId, testSetId, testId), "id");
+			con.updateRunStatus(runId, sumStatus);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.exit(0);
+		}
+		return runId;
+		
+		
 	}
 	
-	public void addRunSteps(String runId, HashMap<String, String> stepIdToStatus) {
-		
+	private void addRunSteps() {
+		for (LinkedTestCase testCase : cases) {
+			addRunStep(testCase);
+		}
+	}
+	
+	private void addRunStep(LinkedTestCase testCase) {
+		try {
+			Logger.logDebug("Finding Run Step for " + testCase.id);
+			String matchingRunStepId = getField(con.getMatchingRunStep(runId, testCase.id), "id");
+			Logger.logDebug("Updating Run Step wit status " + testCase.status.getTypeString());
+			con.updateRunStepStatus(runId, matchingRunStepId, testCase.status.getTypeString());
+		} catch (Exception e) {
+			Logger.logDebug("Failure:" +  e.toString());
+			e.printStackTrace();
+		}
 	}
 	
 	@Override
 	public String toString() {
-		return cases.toString();
+		StringBuilder b = new StringBuilder();
+		b.append(cases.toString());
+		b.append("Name: " + name);
+		b.append("TestSetId: " + testSetId);
+		b.append("TestInstanceId: " + testInstanceId);
+		b.append("sumStatus: " + sumStatus);
+		return b.toString();
 	}
+	
 
 }

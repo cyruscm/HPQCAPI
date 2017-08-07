@@ -31,6 +31,6 @@ public class Endpoints {
     public static final String RUNS = BASE_ENDPOINT + "runs";
     public static final String RUN(String id) { return RUNS + "/" + id; }
     
-    public static final String RUN_STEPS(String runId) { return RUN(runId + "/run-steps");}  
+    public static final String RUN_STEPS(String runId) { return RUN(runId) + "/run-steps";}  
     public static final String RUN_STEP(String runId, String id) { return RUN_STEPS(runId) + "/" + id;}  
 }

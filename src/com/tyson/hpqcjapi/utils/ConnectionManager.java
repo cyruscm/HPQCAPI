@@ -255,7 +255,7 @@ public class ConnectionManager {
 		Entity entity = null;
 
 		try {
-			Response response = con.httpGet(con.buildUrl(collectionUrl), null, requestHeaders);
+			Response response = con.httpGet(collectionUrl, null, requestHeaders);
 			lastResponse = response;
 
 			if (response.getStatusCode() == HttpURLConnection.HTTP_OK) {
