@@ -14,16 +14,18 @@ import org.junit.Test;
 public class ConnectionManagerTest {
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#ConnectionManager()}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#ConnectionManager()}.
 	 */
 	@Test
 	public void testConnectionManager() {
-		fail("Not yet implemented"); 
-		
+		fail("Not yet implemented");
+
 	}
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#validatedLogin()}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#validatedLogin()}.
 	 */
 	@Test
 	public void testValidatedLogin() {
@@ -31,7 +33,8 @@ public class ConnectionManagerTest {
 	}
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#isAuthenticated()}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#isAuthenticated()}.
 	 */
 	@Test
 	public void testIsAuthenticated() {
@@ -47,7 +50,8 @@ public class ConnectionManagerTest {
 	}
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#establishQCSession()}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#establishQCSession()}.
 	 */
 	@Test
 	public void testEstablishQCSession() {
@@ -63,7 +67,8 @@ public class ConnectionManagerTest {
 	}
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#readEntity(java.lang.String)}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#readEntity(java.lang.String)}.
 	 */
 	@Test
 	public void testReadEntity() {
@@ -71,7 +76,8 @@ public class ConnectionManagerTest {
 	}
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#createEntity(java.lang.String, java.lang.String)}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#createEntity(java.lang.String, java.lang.String)}.
 	 */
 	@Test
 	public void testCreateEntity() {
@@ -79,7 +85,8 @@ public class ConnectionManagerTest {
 	}
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#updateEntity(java.lang.String, java.lang.String)}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#updateEntity(java.lang.String, java.lang.String)}.
 	 */
 	@Test
 	public void testUpdateEntity() {
@@ -87,7 +94,8 @@ public class ConnectionManagerTest {
 	}
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#queryEntity(java.lang.String, java.util.Map)}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#queryEntity(java.lang.String, java.util.Map)}.
 	 */
 	@Test
 	public void testQueryEntity() {
@@ -95,7 +103,8 @@ public class ConnectionManagerTest {
 	}
 
 	/**
-	 * Test method for {@link com.tyson.hpqcjapi.utils.ConnectionManager#queryCollection(java.lang.String, java.util.Map)}.
+	 * Test method for
+	 * {@link com.tyson.hpqcjapi.utils.ConnectionManager#queryCollection(java.lang.String, java.util.Map)}.
 	 */
 	@Test
 	public void testQueryCollection() {

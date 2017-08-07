@@ -4,6 +4,7 @@ import com.hpe.infrastructure.Response;
 
 /**
  * Exception for version control errors in HP ALM.
+ * 
  * @author MARTINCORB
  *
  */

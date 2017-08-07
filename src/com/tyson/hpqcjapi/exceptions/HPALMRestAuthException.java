@@ -4,6 +4,7 @@ import com.hpe.infrastructure.Response;
 
 /**
  * Exception for expired credentials or no set credentials.
+ * 
  * @author MARTINCORB
  */
 public class HPALMRestAuthException extends HPALMRestException {

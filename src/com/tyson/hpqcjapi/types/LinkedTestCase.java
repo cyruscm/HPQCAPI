@@ -1,6 +1,5 @@
 package com.tyson.hpqcjapi.types;
 
-
 import org.jsoup.Jsoup;
 
 import com.hpe.infrastructure.Entity;
@@ -9,19 +8,18 @@ import com.tyson.hpqcjapi.utils.Logger;
 
 /**
  * This holds information about a test case that is shared between ALM and JUnit
- * @author MARTINCORB
- * INVARIANTS:
- * 1. TestCases are compared by 3 key values. testSuite must be the same. Additionally,
- *  the key must be the same (getKey()), which is the className and name combined. 
- *  
- * 2. All values except testSuite, className, name, and Status can be null.
- * 3. id and testId are associated with ALM information, and must be dynamically populated
- * 4. systemOut, SystemErr, and time are optional, as defined by XSD standards of JUnit.
+ * 
+ * @author MARTINCORB INVARIANTS: 1. TestCases are compared by 3 key values.
+ *         testSuite must be the same. Additionally, the key must be the same
+ *         (getKey()), which is the className and name combined.
+ * 
+ *         2. All values except testSuite, className, name, and Status can be
+ *         null. 3. id and testId are associated with ALM information, and must
+ *         be dynamically populated 4. systemOut, SystemErr, and time are
+ *         optional, as defined by XSD standards of JUnit.
  */
 public class LinkedTestCase {
-	
 
-	
 	public String testSuite;
 	public String className;
 	public String name;
@@ -31,14 +29,14 @@ public class LinkedTestCase {
 	public String systemOut;
 	public String systemErr;
 	public String time;
-	
+
 	public LinkedTestCase(String testSuite, String className, String name, TestStatus status) {
 		this.testSuite = testSuite;
 		this.className = className;
 		this.name = name;
 		this.status = status;
 	}
-	
+
 	public boolean equals(Object obj) {
 		if (obj.getClass() != LinkedTestCase.class) {
 			return false;
@@ -49,16 +47,17 @@ public class LinkedTestCase {
 		}
 		return false;
 	}
-	
+
 	public void linkToEntity(Entity entity) {
 		if (!(entity.getType().equals("design-step"))) {
-			Logger.logError("Requested entity for linkToEntity on LinkedTestCase " + this.getKey() + " is not a design-step");
+			Logger.logError(
+					"Requested entity for linkToEntity on LinkedTestCase " + this.getKey() + " is not a design-step");
 			return;
 		}
-		
+
 		String id = null;
 		String testId = null;
-		
+
 		for (Field field : entity.getFields().getField()) {
 			if (id != null && testId != null) {
 				break;
@@ -68,29 +67,31 @@ public class LinkedTestCase {
 				testId = field.getValue().get(0);
 			}
 		}
-		
+
 		if (testId == null) {
-			Logger.logError("Requested entity for linkToEntity on LinkedTestCase " + this.getKey() + " does not have a parent-id?");
+			Logger.logError("Requested entity for linkToEntity on LinkedTestCase " + this.getKey()
+					+ " does not have a parent-id?");
 		} else {
 			this.testId = testId;
 		}
-		
+
 		if (id == null) {
-			Logger.logError("Requested entity for linkToEntity on LinkedTestCase " + this.getKey() + " does not have a id?");
+			Logger.logError(
+					"Requested entity for linkToEntity on LinkedTestCase " + this.getKey() + " does not have a id?");
 		} else {
 			this.id = id;
 		}
-		
+
 	}
-	
+
 	public boolean equals(Entity entity) {
 		if (!(entity.getType().equals("design-step"))) {
 			return false;
 		}
-		
+
 		String expected = null;
 		String name = null;
-		
+
 		for (Field field : entity.getFields().getField()) {
 			if (expected != null && name != null) {
 				break;
@@ -100,20 +101,18 @@ public class LinkedTestCase {
 				name = field.getValue().get(0);
 			}
 		}
-	
+
 		if (name.equals(testSuite) && Jsoup.parse(expected).text().equals(this.getKey())) {
 			return true;
 		}
-		
+
 		return false;
 	}
-	
-	
+
 	public String getKey() {
 		return className + ": " + name;
 	}
-	
-	
+
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
@@ -123,6 +122,5 @@ public class LinkedTestCase {
 		b.append(", parent-id: " + testId + "]");
 		return b.toString();
 	}
-	
-}
 
+}

@@ -214,8 +214,7 @@ public class ConnectionManager {
 			XmlBytes = postedEntityXml.getBytes();
 		}
 		requestHeaders.put("Accept", "application/xml");
-		
-		
+
 		Entity entity = null;
 		try {
 			Response response = con.httpPost(collectionUrl, XmlBytes, requestHeaders);
@@ -362,17 +361,16 @@ public class ConnectionManager {
 
 		return readCollection(endpoint, query);
 	}
-	
-	
+
 	public Entities readCollection(String endpoint, String queryString) {
 		if (!isAuthenticated()) {
 			Logger.logWarning("Not authenticated, exiting readCollection(" + endpoint + ")");
 			return null;
 		}
-		
+
 		Map<String, String> requestHeaders = new HashMap<String, String>();
 		requestHeaders.put("Accept", "application/xml");
-		
+
 		Entities entities = null;
 		try {
 			Response response = con.httpGet(con.buildUrl(endpoint), queryString, requestHeaders);

@@ -15,325 +15,273 @@ import com.tyson.hpqcjapi.test.Assert;
 
 public class UpdateExample {
 
-    public static void main(String[] args) throws Exception {
-        new UpdateExample().updateExample(
-                "http://" + Constants.HOST + ":" +
-                        Constants.PORT + "/qcbin",
-                Constants.DOMAIN,
-                Constants.PROJECT,
-                Constants.USERNAME,
-                Constants.PASSWORD);
-    }
+	public static void main(String[] args) throws Exception {
+		new UpdateExample().updateExample("http://" + Constants.HOST + ":" + Constants.PORT + "/qcbin",
+				Constants.DOMAIN, Constants.PROJECT, Constants.USERNAME, Constants.PASSWORD);
+	}
 
-    public void updateExample(final String serverUrl, final String domain,
-                              final String project, String username, String password)
-            throws Exception {
+	public void updateExample(final String serverUrl, final String domain, final String project, String username,
+			String password) throws Exception {
 
-        RestConnector con =
-                RestConnector.getInstance().init(
-                        new HashMap<String, String>(),
-                        serverUrl,
-                        domain,
-                        project);
+		RestConnector con = RestConnector.getInstance().init(new HashMap<String, String>(), serverUrl, domain, project);
 
-        AuthenticateLoginLogoutExample login =
-                new AuthenticateLoginLogoutExample();
-        CreateDeleteExample writeExample = new CreateDeleteExample();
-        UpdateExample example = new UpdateExample();
+		AuthenticateLoginLogoutExample login = new AuthenticateLoginLogoutExample();
+		CreateDeleteExample writeExample = new CreateDeleteExample();
+		UpdateExample example = new UpdateExample();
 
-        // We use the example code of how to login to handle our login
-        // in this example.
-        boolean loginResponse = login.login(username, password);
-        Assert.assertTrue("login failed", loginResponse);
+		// We use the example code of how to login to handle our login
+		// in this example.
+		boolean loginResponse = login.login(username, password);
+		Assert.assertTrue("login failed", loginResponse);
 
-        String exampleEntityType = "requirement";
-        String requirementsUrl =
-                con.buildEntityCollectionUrl(exampleEntityType);
+		String exampleEntityType = "requirement";
+		String requirementsUrl = con.buildEntityCollectionUrl(exampleEntityType);
 
-        // We use the example code of creating an entity to make an entity
-        // for us to update.
-        String newEntityToUpdateUrl =
-                writeExample.createEntity(requirementsUrl,
-                        Constants.entityToPostXml);
+		// We use the example code of creating an entity to make an entity
+		// for us to update.
+		String newEntityToUpdateUrl = writeExample.createEntity(requirementsUrl, Constants.entityToPostXml);
 
-        //create xml that when posted modifies the entity
-        String updatedField = "request-note";
-        String updatedFieldInitialUpdateValue = "I'm an updated value";
+		// create xml that when posted modifies the entity
+		String updatedField = "request-note";
+		String updatedFieldInitialUpdateValue = "I'm an updated value";
 
-        String updatedEntityXml =
-                generateSingleFieldUpdateXml(updatedField,
-                        updatedFieldInitialUpdateValue);
+		String updatedEntityXml = generateSingleFieldUpdateXml(updatedField, updatedFieldInitialUpdateValue);
 
-        //checkout (or lock) the entity - depending on versioning support.
-        boolean isVersioned = Constants.isVersioned(exampleEntityType,
-                domain, project);
-        String preModificationXml = null;
-        if (isVersioned) {
+		// checkout (or lock) the entity - depending on versioning support.
+		boolean isVersioned = Constants.isVersioned(exampleEntityType, domain, project);
+		String preModificationXml = null;
+		if (isVersioned) {
 
-            // Note that we selected an entity that supports versioning
-            // on a project that supports versioning. Would fail otherwise.
-            String firstCheckoutComment = "check out comment1";
-            preModificationXml = example.checkout(newEntityToUpdateUrl,
-                    firstCheckoutComment, -1);
-            Assert.assertTrue(
-                    "checkout comment missing",
-                    preModificationXml.contains(Constants.generateFieldXml(
-                            "vc-checkout-comments",
-                            firstCheckoutComment)));
-        } else {
+			// Note that we selected an entity that supports versioning
+			// on a project that supports versioning. Would fail otherwise.
+			String firstCheckoutComment = "check out comment1";
+			preModificationXml = example.checkout(newEntityToUpdateUrl, firstCheckoutComment, -1);
+			Assert.assertTrue("checkout comment missing", preModificationXml
+					.contains(Constants.generateFieldXml("vc-checkout-comments", firstCheckoutComment)));
+		} else {
 
-            preModificationXml = example.lock(newEntityToUpdateUrl);
-        }
+			preModificationXml = example.lock(newEntityToUpdateUrl);
+		}
 
-        Assert.assertTrue(
-                "posted field value not found",
-                preModificationXml.contains(Constants.entityToPostFieldXml));
+		Assert.assertTrue("posted field value not found", preModificationXml.contains(Constants.entityToPostFieldXml));
 
-        //update the entity
-        String put = example.update(newEntityToUpdateUrl,
-                updatedEntityXml).toString();
-        Assert.assertTrue("posted field value not found",
-                put.contains(Constants.generateFieldXml(
-                        updatedField,
-                        updatedFieldInitialUpdateValue)));
+		// update the entity
+		String put = example.update(newEntityToUpdateUrl, updatedEntityXml).toString();
+		Assert.assertTrue("posted field value not found",
+				put.contains(Constants.generateFieldXml(updatedField, updatedFieldInitialUpdateValue)));
 
-        //checkin (or unlock) the entity - depending on versioning support.
-        if (isVersioned) {
+		// checkin (or unlock) the entity - depending on versioning support.
+		if (isVersioned) {
 
-            String firstCheckinComment = "check in comment1";
-            boolean checkin = example.checkin(newEntityToUpdateUrl,
-                    firstCheckinComment, false);
-            Assert.assertTrue("checkin failed", checkin);
-        } else {
+			String firstCheckinComment = "check in comment1";
+			boolean checkin = example.checkin(newEntityToUpdateUrl, firstCheckinComment, false);
+			Assert.assertTrue("checkin failed", checkin);
+		} else {
 
-            boolean unlock = example.unlock(newEntityToUpdateUrl);
-            Assert.assertTrue("unlock failed", unlock);
-        }
+			boolean unlock = example.unlock(newEntityToUpdateUrl);
+			Assert.assertTrue("unlock failed", unlock);
+		}
 
-        /*
+		/*
+		 * 
+		 * now we do the same thing again, only this time with marshalling
+		 * 
+		 */
 
-         now we do the same thing again, only this time with marshalling
+		// checkout
+		if (isVersioned) {
 
-         */
+			preModificationXml = example.checkout(newEntityToUpdateUrl, "check out comment2", -1);
+		} else {
 
-        //checkout
-        if (isVersioned) {
+			preModificationXml = example.lock(newEntityToUpdateUrl);
+		}
 
-            preModificationXml =
-                    example.checkout(newEntityToUpdateUrl, "check out comment2", -1);
-        } else {
+		Assert.assertTrue("posted field value not found",
+				preModificationXml.contains(Constants.generateFieldXml(updatedField, updatedFieldInitialUpdateValue)));
 
-            preModificationXml = example.lock(newEntityToUpdateUrl);
-        }
+		// create update string
+		String updatedFieldUpdatedValue = "updating via marshal / unmarhsalling";
+		String entityUpdateXml = generateSingleFieldUpdateXml(updatedField, updatedFieldUpdatedValue);
+		// Create entity (we could have instantiated the entity
+		// and used methods to set the new values
+		Entity e = EntityMarshallingUtils.marshal(Entity.class, entityUpdateXml);
 
-        Assert.assertTrue(
-                "posted field value not found",
-                preModificationXml.contains(Constants.generateFieldXml(
-                        updatedField,
-                        updatedFieldInitialUpdateValue)));
+		// Do update operation
+		String updateResponseEntityXml = example
+				.update(newEntityToUpdateUrl, EntityMarshallingUtils.unmarshal(Entity.class, e)).toString();
 
-        //create update string
-        String updatedFieldUpdatedValue =
-                "updating via marshal / unmarhsalling";
-        String entityUpdateXml =
-                generateSingleFieldUpdateXml(updatedField,
-                        updatedFieldUpdatedValue);
-        // Create entity (we could have instantiated the entity
-        // and used methods to set the new values
-        Entity e =
-                EntityMarshallingUtils.marshal(Entity.class, entityUpdateXml);
+		// Entity xml from server -> entity class instance
+		Entity updateResponseEntity = EntityMarshallingUtils.marshal(Entity.class, updateResponseEntityXml);
 
-        // Do update operation
-        String updateResponseEntityXml =
-                example.update(
-                        newEntityToUpdateUrl,
-                        EntityMarshallingUtils.unmarshal(Entity.class, e)).toString();
+		boolean updatedValueEncountered = false;
+		List<Field> fields = updateResponseEntity.getFields().getField();
+		for (Field field : fields) {
+			if (field.getName().equals(updatedField)) {
+				Assert.assertEquals("updated value different than expected", field.getValue().iterator().next(),
+						updatedFieldUpdatedValue);
+				updatedValueEncountered = true;
+				break;
+			}
+		}
+		Assert.assertTrue("did not encounter updated value", updatedValueEncountered);
 
-        // Entity xml from server -> entity class instance
-        Entity updateResponseEntity =
-                EntityMarshallingUtils.marshal(Entity.class,
-                        updateResponseEntityXml);
+		// checkin
+		if (isVersioned) {
+			boolean checkin = example.checkin(newEntityToUpdateUrl, null, false);
+			Assert.assertTrue("checkin failed", checkin);
+		} else {
 
-        boolean updatedValueEncountered = false;
-        List<Field> fields = updateResponseEntity.getFields().getField();
-        for (Field field : fields) {
-            if (field.getName().equals(updatedField)) {
-                Assert.assertEquals(
-                        "updated value different than expected",
-                        field.getValue().iterator().next(),
-                        updatedFieldUpdatedValue);
-                updatedValueEncountered = true;
-                break;
-            }
-        }
-        Assert.assertTrue("did not encounter updated value",
-                updatedValueEncountered);
+			boolean unlock = example.unlock(newEntityToUpdateUrl);
+			Assert.assertTrue("unlock failed", unlock);
+		}
 
-        //checkin
-        if (isVersioned) {
-            boolean checkin =
-                    example.checkin(newEntityToUpdateUrl, null, false);
-            Assert.assertTrue("checkin failed", checkin);
-        } else {
+		// cleanup
+		writeExample.deleteEntity(newEntityToUpdateUrl);
+		login.logout();
 
-            boolean unlock = example.unlock(newEntityToUpdateUrl);
-            Assert.assertTrue("unlock failed", unlock);
-        }
+	}
 
-        //cleanup
-        writeExample.deleteEntity(newEntityToUpdateUrl);
-        login.logout();
+	private RestConnector con;
 
-    }
+	/**
+	 * @param
+	 */
+	public UpdateExample() {
+		con = RestConnector.getInstance();
+	}
 
-    private RestConnector con;
+	/**
+	 * @param entityUrl
+	 *            of the entity to checkout
+	 * @param comment
+	 *            to keep on the server side of why you checked this entity out
+	 * @param version
+	 *            to checkout or -1 if you want the latest
+	 * @return a string description of the checked out entity
+	 * @throws Exception
+	 */
+	public String checkout(String entityUrl, String comment, int version) throws Exception {
 
-    /**
-     * @param
-     */
-    public UpdateExample() {
-        con = RestConnector.getInstance();
-    }
+		String commentXmlBit = ((comment != null) && !comment.isEmpty() ? "<Comment>" + comment + "</Comment>" : "");
 
-    /**
-     * @param entityUrl of the entity to checkout
-     * @param comment   to keep on the server side of why you checked this entity out
-     * @param version   to checkout or -1 if you want the latest
-     * @return a string description of the checked out entity
-     * @throws Exception
-     */
-    public String checkout(String entityUrl, String comment, int version)
-            throws Exception {
+		String versionXmlBit = (version >= 0 ? "<Version>" + version + "</Version>" : "");
 
-        String commentXmlBit =
-                ((comment != null) && !comment.isEmpty()
-                        ? "<Comment>" + comment + "</Comment>"
-                        : "");
+		String xmlData = commentXmlBit + versionXmlBit;
 
-        String versionXmlBit =
-                (version >= 0 ? "<Version>" + version + "</Version>" : "");
+		String xml = xmlData.isEmpty() ? "" : "<CheckOutParameters>" + xmlData + "</CheckOutParameters>";
 
-        String xmlData = commentXmlBit + versionXmlBit;
+		Map<String, String> requestHeaders = new HashMap<String, String>();
+		requestHeaders.put("Content-Type", "application/xml");
+		requestHeaders.put("Accept", "application/xml");
 
-        String xml =
-                xmlData.isEmpty() ? "" : "<CheckOutParameters>"
-                        + xmlData + "</CheckOutParameters>";
+		Response response = con.httpPost(entityUrl + "/versions/check-out", xml.getBytes(), requestHeaders);
 
-        Map<String, String> requestHeaders = new HashMap<String, String>();
-        requestHeaders.put("Content-Type", "application/xml");
-        requestHeaders.put("Accept", "application/xml");
+		if (response.getStatusCode() != HttpURLConnection.HTTP_OK) {
+			throw new Exception(response.toString());
+		}
 
-        Response response =
-                con.httpPost(entityUrl + "/versions/check-out", xml.getBytes(), requestHeaders);
+		return response.toString();
+	}
 
-        if (response.getStatusCode() != HttpURLConnection.HTTP_OK) {
-            throw new Exception(response.toString());
-        }
+	/**
+	 * @param entityUrl
+	 *            to checkin
+	 * @param comment
+	 *            this will override any comment you made in the checkout
+	 * @param overrideLastVersion
+	 *            this will override last version
+	 * @return true if operation is successful
+	 * @throws Exception
+	 */
+	public boolean checkin(String entityUrl, String comment, boolean overrideLastVersion) throws Exception {
 
-        return response.toString();
-    }
+		final String commentXmlBit = ((comment != null) && !comment.isEmpty() ? "<Comment>" + comment + "</Comment>"
+				: "");
 
-    /**
-     * @param entityUrl           to checkin
-     * @param comment             this will override any comment you made in the checkout
-     * @param overrideLastVersion this will override last version
-     * @return true if operation is successful
-     * @throws Exception
-     */
-    public boolean checkin(String entityUrl, String comment,
-                           boolean overrideLastVersion) throws Exception {
+		final String overrideLastVersionBit = overrideLastVersion == true
+				? "<OverrideLastVersion>true</OverrideLastVersion>"
+				: "";
 
-        final String commentXmlBit =
-                ((comment != null) && !comment.isEmpty()
-                        ? "<Comment>" + comment + "</Comment>"
-                        : "");
+		final String xmlData = commentXmlBit + overrideLastVersionBit;
 
-        final String overrideLastVersionBit =
-                overrideLastVersion == true ?
-                        "<OverrideLastVersion>true</OverrideLastVersion>" : "";
+		final String xml = xmlData.isEmpty() ? "" : "<CheckInParameters>" + xmlData + "</CheckInParameters>";
 
-        final String xmlData = commentXmlBit + overrideLastVersionBit;
+		final Map<String, String> requestHeaders = new HashMap<String, String>();
+		requestHeaders.put("Content-Type", "application/xml");
 
-        final String xml =
-                xmlData.isEmpty() ? "" : "<CheckInParameters>" + xmlData + "</CheckInParameters>";
+		// just execute a post operation on the checkin resource of your entity
+		Response response = con.httpPost(entityUrl + "/versions/check-in", xml.getBytes(), requestHeaders);
 
-        final Map<String, String> requestHeaders =
-                new HashMap<String, String>();
-        requestHeaders.put("Content-Type", "application/xml");
+		boolean ret = response.getStatusCode() == HttpURLConnection.HTTP_OK;
 
-        //just execute a post operation on the checkin resource of your entity
-        Response response =
-                con.httpPost(entityUrl + "/versions/check-in", xml.getBytes(),
-                        requestHeaders);
+		return ret;
+	}
 
-        boolean ret = response.getStatusCode() == HttpURLConnection.HTTP_OK;
+	/**
+	 * @param entityUrl
+	 *            to lock
+	 * @return the locked entity xml
+	 * @throws Exception
+	 */
+	public String lock(String entityUrl) throws Exception {
 
-        return ret;
-    }
+		Map<String, String> requestHeaders = new HashMap<String, String>();
+		requestHeaders.put("Accept", "application/xml");
 
-    /**
-     * @param entityUrl to lock
-     * @return the locked entity xml
-     * @throws Exception
-     */
-    public String lock(String entityUrl) throws Exception {
+		Response lockResponse = con.httpPost(entityUrl + "/lock", null, requestHeaders);
+		if (lockResponse.getStatusCode() != HttpURLConnection.HTTP_OK) {
+			throw new Exception(lockResponse.toString());
+		}
+		return lockResponse.toString();
+	}
 
-        Map<String, String> requestHeaders = new HashMap<String, String>();
-        requestHeaders.put("Accept", "application/xml");
+	/**
+	 * @param entityUrl
+	 *            to unlock
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean unlock(String entityUrl) throws Exception {
 
-        Response lockResponse = con.httpPost(entityUrl + "/lock", null,
-                requestHeaders);
-        if (lockResponse.getStatusCode() != HttpURLConnection.HTTP_OK) {
-            throw new Exception(lockResponse.toString());
-        }
-        return lockResponse.toString();
-    }
+		return con.httpDelete(entityUrl + "/lock", null).getStatusCode() == HttpURLConnection.HTTP_OK;
+	}
 
-    /**
-     * @param entityUrl to unlock
-     * @return
-     * @throws Exception
-     */
-    public boolean unlock(String entityUrl) throws Exception {
+	/**
+	 * @param field
+	 *            the field name to update
+	 * @param value
+	 *            the new value to use
+	 * @return an xml that can be used to update an entity's single given field to
+	 *         given value
+	 */
+	private static String generateSingleFieldUpdateXml(String field, String value) {
+		return "<Entity Type=\"requirement\"><Fields>" + Constants.generateFieldXml(field, value)
+				+ "</Fields></Entity>";
+	}
 
-        return con.httpDelete(entityUrl + "/lock", null).getStatusCode() == HttpURLConnection.HTTP_OK;
-    }
+	/**
+	 * @param entityUrl
+	 *            to update
+	 * @param updatedEntityXml
+	 *            New entity descripion. Only lists updated fields. Unmentioned
+	 *            fields will not change.
+	 * @return xml description of the entity on the serverside, after update.
+	 * @throws Exception
+	 */
+	private Response update(String entityUrl, String updatedEntityXml) throws Exception {
 
-    /**
-     * @param field the field name to update
-     * @param value the new value to use
-     * @return an xml that can be used to update an entity's single
-     * given field to given value
-     */
-    private static String generateSingleFieldUpdateXml(String field,
-                                                       String value) {
-        return "<Entity Type=\"requirement\"><Fields>"
-                + Constants.generateFieldXml(field, value)
-                + "</Fields></Entity>";
-    }
+		Map<String, String> requestHeaders = new HashMap<String, String>();
+		requestHeaders.put("Content-Type", "application/xml");
+		requestHeaders.put("Accept", "application/xml");
 
-    /**
-     * @param entityUrl        to update
-     * @param updatedEntityXml New entity descripion. Only lists updated fields.
-     *                         Unmentioned fields will not change.
-     * @return xml description of the entity on the serverside, after update.
-     * @throws Exception
-     */
-    private Response update(String entityUrl, String updatedEntityXml)
-            throws Exception {
+		Response putResponse = con.httpPut(entityUrl, updatedEntityXml.getBytes(), requestHeaders);
 
-        Map<String, String> requestHeaders = new HashMap<String, String>();
-        requestHeaders.put("Content-Type", "application/xml");
-        requestHeaders.put("Accept", "application/xml");
+		if (putResponse.getStatusCode() != HttpURLConnection.HTTP_OK) {
+			throw new Exception(putResponse.toString());
+		}
 
-        Response putResponse =
-                con.httpPut(entityUrl, updatedEntityXml.getBytes(), requestHeaders);
-
-        if (putResponse.getStatusCode() != HttpURLConnection.HTTP_OK) {
-            throw new Exception(putResponse.toString());
-        }
-
-        return putResponse;
-    }
+		return putResponse;
+	}
 
 }
