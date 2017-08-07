@@ -1,77 +1,112 @@
 package com.tyson.hpqcjapi.resources;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Map;
+import java.util.Properties;
+
 import com.hpe.infrastructure.Constants;
 
 /**
  * Created by MARTINCORB on 7/14/2017.
  */
 public class Config {
-	private static String Host;
-	private static String Port;
-	private static String Domain;
-	private static String Project;
-	private static String Username;
-	private static String Password;
-	private static String Team;
-	private static String UnitTestFolderID;
-	private static String testSetName;
-	private static String testSetID;
-	private static boolean guessTestSet;
+	private static Properties prop;
+
+	private final static String DEFAULT_CONFIG_PATH = "config.properties";
 
 	public static String getHost() {
-		return Host;
+		return prop.getProperty("host");
 	}
 
 	public static String getPort() {
-		return Port;
+		return prop.getProperty("port");
 	}
 
 	public static String getDomain() {
-		return Domain;
+		return prop.getProperty("domain");
 	}
 
 	public static String getProject() {
-		return Project;
+		return prop.getProperty("project");
 	}
 
 	public static String getUsername() {
-		return Username;
+		return prop.getProperty("username");
 	}
 
 	public static String getPassword() {
-		return Password;
+		return prop.getProperty("password");
 	}
 
 	public static String getTeam() {
-		return Team;
+		return prop.getProperty("team");
 	}
 
 	public static String getUnitTestFolderID() {
-		return UnitTestFolderID;
+		return prop.getProperty("testfolder");
 	}
 
 	public static String getTestSetName() {
-		return testSetName;
+		return prop.getProperty("testsetname");
 	}
 
 	public static String getTestSetID() {
-		return testSetID;
+		return prop.getProperty("testsetid");
 	}
 
 	public static boolean guessTestSet() {
-		return guessTestSet;
+		return ((prop.getProperty("guesstestset") != null) ? 
+				(prop.getProperty("guesstestset").equals("false") ? false : true) 
+				: true);
 	}
 
-	public static void initConfigs(String[] args) {
-		Host = (args[0] != null) ? args[0] : Constants.HOST;
-		Port = (args[1] != null) ? args[1] : Constants.PORT;
-		Domain = (args[2] != null) ? args[2] : Constants.DOMAIN;
-		Project = (args[3] != null) ? args[3] : Constants.PROJECT;
-		Username = (args[4] != null) ? args[4] : Constants.USERNAME;
-		Password = (args[5] != null) ? args[5] : Constants.PASSWORD;
-		Team = "BI - BW";
-		UnitTestFolderID = "1018";
-		guessTestSet = true;
-		testSetID = "102";
+	public static void initConfigs(Map<String, String> parArgs) {
+		prop = new Properties();
+		readConfig((parArgs.get("config") == null) ? DEFAULT_CONFIG_PATH : parArgs.get("config"));
+		prop.putAll(parArgs);
+	}
+
+	private static void readConfig(String path) {
+		try {
+			InputStream input = new FileInputStream(path);
+			prop.load(input);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static void createConfig() {
+		prop.setProperty("host", Constants.HOST);
+		prop.setProperty("port", Constants.PORT);
+		prop.setProperty("domain", Constants.DOMAIN);
+		prop.setProperty("project", Constants.PROJECT);
+		prop.setProperty("username", Constants.USERNAME);
+		prop.setProperty("password", Constants.PASSWORD);
+		prop.setProperty("team", Constants.TEAM);
+		prop.setProperty("testfolder", Constants.FOLDERID);
+		prop.setProperty("testsetid", Constants.TESTSETID);
+		prop.setProperty("testsetname", Constants.TESTSETNAME);
+		prop.setProperty("guesstestset", Constants.GUESSTESTSET);
+
+		try {
+			OutputStream output = new FileOutputStream(DEFAULT_CONFIG_PATH);
+			prop.store(output,
+					"Default properties to use for HPQCJAPI connections. Please adjust to your needs."
+					+ " Note that these can all be ignored with cli args. Also testsetid, testsetname,"
+					+ " and guesstestset are not required. TestSetId links directly to testset, name"
+					+ " attempts to find the id matching the exact provided name, guess will simply"
+					+ " use the tesetset folder from the last run (please mark guesstestset with either true or false).");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

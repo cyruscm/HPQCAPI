@@ -15,12 +15,24 @@ import com.tyson.hpqcjapi.types.TestStatus;
 import com.tyson.hpqcjapi.types.Testcase;
 import com.tyson.hpqcjapi.types.Testsuite;
 import com.tyson.hpqcjapi.types.Testsuites;
+import com.tyson.hpqcjapi.utils.Logger;
 
+/**
+ * Parses a default JUnit XML file. 
+ * @author MARTINCORB
+ *
+ */
 public class JUnitReader {
 
 	private Testsuites suites;
+	private String path;
 
+	/**
+	 * Create a JUnit parser from the xml file path
+	 * @param path Path to file. Relative from run or absolute. Include file ending.
+	 */
 	public JUnitReader(String path) {
+		this.path = path;
 		try {
 			String xml = new String(Files.readAllBytes(Paths.get(path)));
 			suites = EntityMarshallingUtils.marshal(Testsuites.class, xml);
@@ -31,7 +43,12 @@ public class JUnitReader {
 		}
 	}
 
+	/**
+	 * Output a list of List of LinkedTestCases parsed form inputted xml
+	 * @return
+	 */
 	public List<LinkedTestCase> parseSuites() {
+		Logger.log("Parsing JUnit xml at " + path);
 		List<LinkedTestCase> cases = new ArrayList<LinkedTestCase>();
 		for (Testsuite suite : suites.getTestsuite()) {
 			for (Testcase testcase : suite.getTestcase()) {
@@ -45,6 +62,11 @@ public class JUnitReader {
 		return cases;
 	}
 
+	/**
+	 * Combine list of strings with new lines
+	 * @param strings
+	 * @return
+	 */
 	private String concatStrings(List<String> strings) {
 		StringBuilder b = new StringBuilder();
 		for (String line : strings) {
@@ -53,6 +75,11 @@ public class JUnitReader {
 		return b.toString();
 	}
 
+	/**
+	 * Appends excess data to a LinkedTestCase that is optional
+	 * @param testcase
+	 * @param newcase
+	 */
 	private void verifiedDetailAppend(Testcase testcase, LinkedTestCase newcase) {
 		if (!testcase.getSystemErr().isEmpty()) {
 			newcase.systemErr = concatStrings(testcase.getSystemErr());
@@ -67,18 +94,24 @@ public class JUnitReader {
 		}
 	}
 
+	/**
+	 * Turns a Testcase status into a TestStatus object with messages and types
+	 * @param testcase
+	 * @return
+	 */
 	private TestStatus getTestStatus(Testcase testcase) {
 		if (testcase.getSkipped() != null && !testcase.getSkipped().isEmpty()) {
 			return new TestStatus(TestStatus.STATUS_TYPE.SKIPPED, testcase.getSkipped());
 		} else if (testcase.getFailure() != null && !testcase.getFailure().isEmpty()) {
 			StringBuilder b = new StringBuilder();
 			for (Failure failure : testcase.getFailure()) {
-				b.append(failure.getMessage() + "\n");
+				b.append(failure.getMessage() + ": \n");
+				b.append(failure.getContent() + "\n");
 			}
 
 			return new TestStatus(TestStatus.STATUS_TYPE.FAILED, b.toString());
 		} else {
-			return new TestStatus(TestStatus.STATUS_TYPE.PASSED, "");
+			return new TestStatus(TestStatus.STATUS_TYPE.PASSED, "No failures found.");
 		}
 	}
 }

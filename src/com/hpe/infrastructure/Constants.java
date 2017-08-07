@@ -16,6 +16,12 @@ public class Constants {
 
 	public static final String DOMAIN = "PROJECTS";
 	public static final String PROJECT = "SR23428_EnterpriseWaterMgmtSys";
+	
+	public static final String TEAM = "BI - BW";
+	public static final String FOLDERID = "1018";
+	public static final String TESTSETID = "";
+	public static final String TESTSETNAME = "";
+	public static final String GUESSTESTSET = "true";
 
 	/**
 	 * Supports running tests correctly on both versioned and non-versioned

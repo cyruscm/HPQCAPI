@@ -17,6 +17,17 @@ import com.tyson.hpqcjapi.types.TestStatus;
 import com.tyson.hpqcjapi.utils.ALMManager;
 import com.tyson.hpqcjapi.utils.Logger;
 
+/**
+ * Provides a functional layer to HPQCJAPI that handles
+ * automatically posting and adding details where necessary
+ * for HPQC
+ * @author MARTINCORB
+ * 
+ * Notes:
+ * This is heavily dependent on the Config file, which must
+ * be initialized before running.
+ *
+ */
 public class JUnitPoster {
 
 	private ALMManager con;
@@ -29,6 +40,11 @@ public class JUnitPoster {
 
 	private List<LinkedTestCase> cases;
 
+	/**
+	 * Prepares and returns JUnitPoster with name and results
+	 * @param name
+	 * @param results
+	 */
 	public JUnitPoster(String name, JUnitReader results) {
 		this.name = name;
 		this.testId = null;
@@ -36,8 +52,11 @@ public class JUnitPoster {
 		this.testInstanceId = null;
 		con = new ALMManager();
 		con.init();
+
 		cases = results.parseSuites();
 		sumStatus = calcSumStatus();
+
+		Logger.log("Determined that summed test result is \"" + sumStatus + "\"");
 	}
 
 	private String calcSumStatus() {
@@ -63,12 +82,29 @@ public class JUnitPoster {
 		return null;
 	}
 
+	/**
+	 * Posts the JUnit results to HPQC. 
+	 */
 	public void publishTest() {
+		Logger.log("Beginning publishing JUnit results to HPQC...");
 		testId = getTestId();
+		Logger.logDebug("Found testID: " + testId);
+		Logger.log("Synching testcases with HPQC...");
 		syncTestSteps();
+		
+		Logger.log("Determining which test set to use...");
 		testSetId = suggestedTestSet();
+		Logger.logDebug("Using Test Set " + testSetId);
+		
+		Logger.log("Determining test instance details...");
 		testInstanceId = getTestInstanceId();
+		Logger.logDebug("Found testInstanceID: " + testInstanceId);
+		
+		Logger.log("Preparing a run for test instance...");
 		runId = createRun();
+		Logger.logDebug("Created run with runID:" + runId);
+		
+		Logger.log("Synchronizing testcase results with HPQC run");
 		addRunSteps();
 	}
 
@@ -76,6 +112,7 @@ public class JUnitPoster {
 		try {
 			return con.getTestID(name);
 		} catch (HPALMRestMissingException e) {
+			Logger.log("No test matching the provided name (" + name + ") has been found. Creating one...");
 			return createTest();
 		} catch (Exception e) {
 			return (String) handleError(e);
@@ -306,7 +343,7 @@ public class JUnitPoster {
 			Logger.logDebug("Finding Run Step for " + testCase.id);
 			String matchingRunStepId = getField(con.getMatchingRunStep(runId, testCase.id), "id");
 			Logger.logDebug("Updating Run Step wit status " + testCase.status.getTypeString());
-			con.updateRunStepStatus(runId, matchingRunStepId, testCase.status.getTypeString());
+			con.updateRunStepStatus(runId, matchingRunStepId, testCase.status.getTypeString(), testCase.status.getMessage());
 		} catch (Exception e) {
 			handleError(e);
 		}

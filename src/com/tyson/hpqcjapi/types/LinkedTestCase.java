@@ -119,6 +119,7 @@ public class LinkedTestCase {
 		b.append("[key: " + this.getKey());
 		b.append(", testSuite: " + this.testSuite);
 		b.append(", id: " + id);
+		b.append(", statusMessage; " + this.status.getMessage());
 		b.append(", parent-id: " + testId + "]");
 		return b.toString();
 	}

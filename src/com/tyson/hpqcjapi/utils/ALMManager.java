@@ -539,9 +539,10 @@ public class ALMManager extends ConnectionManager {
 		return genericUpdateEntity(Endpoints.RUN_STEP(runId, id), postedEntityXml, responseMap);
 	}
 
-	public Entity updateRunStepStatus(String runId, String id, String status) throws Exception {
+	public Entity updateRunStepStatus(String runId, String id, String status, String message) throws Exception {
 		XMLCreator xml = new XMLCreator("Entity", "run-step");
 		xml.addField("status", status);
+		xml.addField("actual", message);
 		Entity toReturn = updateRunStep(runId, id, xml.publish());
 		Logger.logDebug("Response: " + new String(lastResponse.getResponseData()));
 		return toReturn;
