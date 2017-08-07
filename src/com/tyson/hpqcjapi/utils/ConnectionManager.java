@@ -1,15 +1,14 @@
 package com.tyson.hpqcjapi.utils;
 
-import infrastructure.RestConnector;
-import infrastructure.Base64Encoder;
-import infrastructure.Entity;
-import infrastructure.EntityMarshallingUtils;
-import infrastructure.Response;
-
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.hpe.infrastructure.Base64Encoder;
+import com.hpe.infrastructure.Entity;
+import com.hpe.infrastructure.EntityMarshallingUtils;
+import com.hpe.infrastructure.Response;
+import com.hpe.infrastructure.RestConnector;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Endpoints;
 import com.tyson.hpqcjapi.resources.Messages;

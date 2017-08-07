@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.hpe.infrastructure.Entity;
+import com.hpe.infrastructure.Entity.Fields.Field;
 import com.tyson.hpqcjapi.exceptions.HPALMRestAuthException;
 import com.tyson.hpqcjapi.exceptions.HPALMRestDuplicateException;
 import com.tyson.hpqcjapi.exceptions.HPALMRestException;
@@ -17,9 +19,6 @@ import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Endpoints;
 import com.tyson.hpqcjapi.resources.Messages;
 import com.tyson.hpqcjapi.types.Entities;
-
-import infrastructure.Entity;
-import infrastructure.Entity.Fields.Field;
 
 /**
  * This specializes the ConnectionManager towards ALM 12.01 functions with CRUD. However,
@@ -134,7 +133,7 @@ public class ALMManager extends ConnectionManager {
 		// Check if the exceptionClass has a constructor that takes a response. Else use default constructor
 		for (Constructor<?> constructor : exceptionClass.getConstructors()) {
 			Type[] paramTypes = constructor.getGenericParameterTypes();
-			if (paramTypes.length == 1 && paramTypes[0] instanceof infrastructure.Response) {
+			if (paramTypes.length == 1 && paramTypes[0] instanceof com.hpe.infrastructure.Response) {
 				try {
 					exception = (Exception) constructor.newInstance(lastResponse);
 				} catch (Exception e) {

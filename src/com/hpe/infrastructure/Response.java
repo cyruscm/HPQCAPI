@@ -1,4 +1,4 @@
-package infrastructure;
+package com.hpe.infrastructure;
 
 import java.util.Map;
 

@@ -1,6 +1,6 @@
 package com.tyson.hpqcjapi.exceptions;
 
-import infrastructure.Response;
+import com.hpe.infrastructure.Response;
 
 /**
  * Exception for version control errors in HP ALM.

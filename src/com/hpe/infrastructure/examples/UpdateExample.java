@@ -1,16 +1,12 @@
-package infrastructure.examples;
+package com.hpe.infrastructure.examples;
 
-/**
- * Created by MARTINCORB on 7/14/2017.
- */
-
-import infrastructure.*;
-import infrastructure.Entity.Fields.Field;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.hpe.infrastructure.*;
+import com.hpe.infrastructure.Entity.Fields.Field;
 import com.tyson.hpqcjapi.test.Assert;
 
 /**

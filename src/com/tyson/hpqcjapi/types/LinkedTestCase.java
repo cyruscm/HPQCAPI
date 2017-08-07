@@ -3,10 +3,9 @@ package com.tyson.hpqcjapi.types;
 
 import org.jsoup.Jsoup;
 
+import com.hpe.infrastructure.Entity;
+import com.hpe.infrastructure.Entity.Fields.Field;
 import com.tyson.hpqcjapi.utils.Logger;
-
-import infrastructure.Entity;
-import infrastructure.Entity.Fields.Field;
 
 /**
  * This holds information about a test case that is shared between ALM and JUnit

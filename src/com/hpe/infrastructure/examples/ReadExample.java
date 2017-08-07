@@ -1,13 +1,12 @@
-package infrastructure.examples;
-
-import infrastructure.*;
-import infrastructure.Entity.Fields.Field;
+package com.hpe.infrastructure.examples;
 
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.hpe.infrastructure.*;
+import com.hpe.infrastructure.Entity.Fields.Field;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.test.Assert;
 import com.tyson.hpqcjapi.utils.ConnectionManager;

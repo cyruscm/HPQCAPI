@@ -8,14 +8,13 @@ import java.util.List;
 
 import javax.xml.bind.JAXBException;
 
+import com.hpe.infrastructure.EntityMarshallingUtils;
 import com.tyson.hpqcjapi.types.Failure;
 import com.tyson.hpqcjapi.types.LinkedTestCase;
 import com.tyson.hpqcjapi.types.TestStatus;
 import com.tyson.hpqcjapi.types.Testcase;
 import com.tyson.hpqcjapi.types.Testsuite;
 import com.tyson.hpqcjapi.types.Testsuites;
-
-import infrastructure.EntityMarshallingUtils;
 
 public class JUnitReader {
 

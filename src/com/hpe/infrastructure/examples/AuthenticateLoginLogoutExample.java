@@ -1,14 +1,10 @@
-package com.tyson.hpqcjapi.examples;
-
-/**
- * Created by MARTINCORB on 7/14/2017.
- */
-import infrastructure.*;
+package com.hpe.infrastructure.examples;
 
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.hpe.infrastructure.*;
 import com.tyson.hpqcjapi.test.Assert;
 
 /**

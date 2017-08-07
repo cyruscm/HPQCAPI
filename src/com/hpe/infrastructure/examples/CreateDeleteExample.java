@@ -1,17 +1,12 @@
-package com.tyson.hpqcjapi.examples;
-
-/**
- * Created by MARTINCORB on 7/14/2017.
- */
-
-import infrastructure.Response;
-import infrastructure.Constants;
-import infrastructure.RestConnector;
+package com.hpe.infrastructure.examples;
 
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.hpe.infrastructure.Constants;
+import com.hpe.infrastructure.Response;
+import com.hpe.infrastructure.RestConnector;
 import com.tyson.hpqcjapi.test.Assert;
 
 /**

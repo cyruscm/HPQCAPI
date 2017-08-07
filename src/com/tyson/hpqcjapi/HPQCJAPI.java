@@ -13,11 +13,10 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import com.hpe.infrastructure.Constants;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.types.LinkedTestCase;
 import com.tyson.hpqcjapi.utils.Logger;
-
-import infrastructure.Constants;
 
 public class HPQCJAPI {
     public static void main(String[] args) {
@@ -106,7 +105,7 @@ public class HPQCJAPI {
     }
     
     public static void run() {
-    	String name = "AutomatedRestAPITestWithDesignSteps3";
+    	String name = "HPQCJAPI Diff Test";
     	String path = "C:/Users/MARTINCORB/eclipse-workspace/HPQCJAPI/sampleJunit.xml";
     	JUnitReader reader = new JUnitReader(path);
     	JUnitPoster poster = new JUnitPoster(name, reader);

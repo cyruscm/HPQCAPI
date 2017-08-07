@@ -1,14 +1,13 @@
-package infrastructure.examples;
-
-import infrastructure.Constants;
-import infrastructure.Response;
-import infrastructure.RestConnector;
+package com.hpe.infrastructure.examples;
 
 import java.io.ByteArrayOutputStream;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.hpe.infrastructure.Constants;
+import com.hpe.infrastructure.Response;
+import com.hpe.infrastructure.RestConnector;
 import com.tyson.hpqcjapi.test.Assert;
 
 /**

@@ -1,4 +1,4 @@
-package infrastructure;
+package com.hpe.infrastructure;
 
 /**
  * These constants are used throughout the code to set the

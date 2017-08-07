@@ -1,4 +1,4 @@
-package infrastructure;
+package com.hpe.infrastructure;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;

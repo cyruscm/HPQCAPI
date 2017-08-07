@@ -1,4 +1,4 @@
-package infrastructure;
+package com.hpe.infrastructure;
 
 /**
  * Created by MARTINCORB on 7/13/2017.

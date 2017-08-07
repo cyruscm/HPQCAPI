@@ -1,6 +1,6 @@
 package com.tyson.hpqcjapi.resources;
 
-import infrastructure.Constants;
+import com.hpe.infrastructure.Constants;
 
 /**
  * Created by MARTINCORB on 7/14/2017.

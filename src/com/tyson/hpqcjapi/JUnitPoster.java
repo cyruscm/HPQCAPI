@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.hpe.infrastructure.Entity;
+import com.hpe.infrastructure.Entity.Fields.Field;
 import com.tyson.hpqcjapi.exceptions.HPALMRestException;
 import com.tyson.hpqcjapi.exceptions.HPALMRestMissingException;
 import com.tyson.hpqcjapi.resources.Config;
@@ -14,9 +16,6 @@ import com.tyson.hpqcjapi.types.LinkedTestCase;
 import com.tyson.hpqcjapi.types.TestStatus;
 import com.tyson.hpqcjapi.utils.ALMManager;
 import com.tyson.hpqcjapi.utils.Logger;
-
-import infrastructure.Entity;
-import infrastructure.Entity.Fields.Field;
 
 
 public class JUnitPoster {
@@ -81,10 +80,8 @@ public class JUnitPoster {
 		} catch (HPALMRestMissingException e) {
 			return createTest();
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
+			return (String) handleError(e);
 		}
-		return null;
 	}
 	
 
@@ -93,10 +90,7 @@ public class JUnitPoster {
 		try {
 			test = con.createTest(name, null);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			System.exit(0);
-			return null;
+			return (String) handleError(e);
 		}
 		return getField(test, "id");
 	}
@@ -109,14 +103,11 @@ public class JUnitPoster {
 	 * so previous tests will be lost if the key changes. The key is the test classname + the test name
 	 */
 	private void syncTestSteps() {
-		Entities entities;
+		Entities entities = null;
 		try {
 			entities = con.getCurrentDesignSteps(testId);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			System.exit(0);
-			return;
+			handleError(e);
 		}
 		List<Entity> entitiesList = new ArrayList<Entity>();
 		
@@ -131,9 +122,7 @@ public class JUnitPoster {
 			try {
 				con.checkOutTest(testId);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				System.exit(0);
+				handleError(e);
 			}
 			if (!entitiesList.isEmpty()) {
 				removeEntities(entitiesList);
@@ -144,9 +133,7 @@ public class JUnitPoster {
 			try {
 				con.checkInTest(testId);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				System.exit(0);
+				handleError(e);
 			}
 		}
 	}
@@ -161,9 +148,7 @@ public class JUnitPoster {
 			try {
 				entity = con.createDesignStep(testCase.testSuite, testId, Messages.DESIGN_STEP_DESCRIPTION, testCase.getKey(), null);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				System.exit(0);
+				handleError(e);
 			}
 			testCase.linkToEntity(entity);
 		}
@@ -178,8 +163,7 @@ public class JUnitPoster {
 			try {
 				con.deleteDesignStep(this.getField(entity, "id"));
 			} catch (Exception e) {
-				e.printStackTrace();
-				System.exit(0);
+				handleError(e);
 			}
 		}
 	}
@@ -231,8 +215,7 @@ public class JUnitPoster {
 			try {
 				suggestedEntity = con.getLatestRun();
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				handleError(e);
 			}
 			if (suggestedEntity != null) {
 				return getField(suggestedEntity, "cycle-id");
@@ -241,7 +224,6 @@ public class JUnitPoster {
 			}
 		} 
 		Logger.logError("There is no way to get a valid TestSet with your provided paramaters. Tool could not complete. Please add a valid TestSet Name or TestSet ID. To find a valid TestSet id, open ALM and go to Test Lab then right click the desired TestSet and select Properties. The ID is located in the top left of the popup window.");
-		System.exit(0);
 		return null;
 	}
 	
@@ -251,10 +233,11 @@ public class JUnitPoster {
 		} catch (HPALMRestException e) {
 			Logger.logDebug(new String(e.getResponse().getResponseData()));
 			Logger.logDebug(new String(e.getResponse().getResponseHeaders().toString()));
+			handleError(e);
 			return false;
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			handleError(e);
 			return false;
 		}
 	}
@@ -263,8 +246,7 @@ public class JUnitPoster {
 		try {
 			return con.getTestSetID(name);
 		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
+			return (String) handleError(e);
 		}
 	}
 	
@@ -280,8 +262,7 @@ public class JUnitPoster {
 		} catch (HPALMRestMissingException e) {
 			return createTestInstance();
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
+			handleError(e);
 		}
 		return null;
 	}
@@ -293,10 +274,7 @@ public class JUnitPoster {
 		try {
 			test = con.createTestInstance(testSetId, testId, null);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			System.exit(0);
-			return null;
+			return (String) handleError(e);
 		}
 		return getField(test, "id");
 	}	
@@ -307,9 +285,7 @@ public class JUnitPoster {
 			runId = getField(con.createRun(name, testInstanceId, testSetId, testId), "id");
 			con.updateRunStatus(runId, sumStatus);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			System.exit(0);
+			return (String) handleError(e);
 		}
 		return runId;
 		
@@ -329,8 +305,7 @@ public class JUnitPoster {
 			Logger.logDebug("Updating Run Step wit status " + testCase.status.getTypeString());
 			con.updateRunStepStatus(runId, matchingRunStepId, testCase.status.getTypeString());
 		} catch (Exception e) {
-			Logger.logDebug("Failure:" +  e.toString());
-			e.printStackTrace();
+			handleError(e);
 		}
 	}
 	
@@ -343,6 +318,12 @@ public class JUnitPoster {
 		b.append("TestInstanceId: " + testInstanceId);
 		b.append("sumStatus: " + sumStatus);
 		return b.toString();
+	}
+	
+	
+	private Object handleError(Exception e) {
+		Logger.logDebug(e.getMessage());
+		return null;
 	}
 	
 

@@ -1,6 +1,6 @@
 package com.tyson.hpqcjapi.exceptions;
 
-import infrastructure.Response;
+import com.hpe.infrastructure.Response;
 
 public class HPALMRestException extends Exception{
 	

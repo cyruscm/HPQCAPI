@@ -9,10 +9,9 @@ entities to allow for uniform data structures for XML Parsing.
 
 import javax.xml.bind.annotation.*;
 
+import com.hpe.infrastructure.Entity;
+import com.hpe.infrastructure.Entity.Fields;
 import com.tyson.hpqcjapi.utils.Logger;
-
-import infrastructure.Entity;
-import infrastructure.Entity.Fields;
 
 import java.text.ParseException;
 import java.util.ArrayList;
