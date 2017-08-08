@@ -11,6 +11,11 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 bin/
+.project
+config.properties
+sampleJunit.xml
+.classpath
+.settings/
 
 # Package Files #
 *.jar
