@@ -1,12 +1,11 @@
 package com.tyson.hpqcjapi;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.hpe.infrastructure.Entity;
 import com.hpe.infrastructure.Entity.Fields.Field;
+import com.tyson.hpqcjapi.exceptions.HPALMRestDuplicateException;
 import com.tyson.hpqcjapi.exceptions.HPALMRestException;
 import com.tyson.hpqcjapi.exceptions.HPALMRestMissingException;
 import com.tyson.hpqcjapi.resources.Config;
@@ -20,23 +19,17 @@ import com.tyson.hpqcjapi.utils.Logger;
 /**
  * Provides a functional layer to HPQCJAPI that handles
  * automatically posting and adding details where necessary
- * for HPQC
+ * for HPQC. 
  * @author MARTINCORB
  * 
  * Notes:
  * This is heavily dependent on the Config file, which must
  * be initialized before running.
- *
  */
 public class JUnitPoster {
 
 	private ALMManager con;
-	private String name;
-	private String testId;
-	private String testSetId;
-	private String testInstanceId;
 	private String sumStatus;
-	private String runId;
 
 	private List<LinkedTestCase> cases;
 
@@ -46,10 +39,6 @@ public class JUnitPoster {
 	 * @param results
 	 */
 	public JUnitPoster(String name, JUnitReader results) {
-		this.name = name;
-		this.testId = null;
-		this.testSetId = null;
-		this.testInstanceId = null;
 		con = new ALMManager();
 		con.init();
 
@@ -59,6 +48,10 @@ public class JUnitPoster {
 		Logger.log("Determined that summed test result is \"" + sumStatus + "\"");
 	}
 
+	/**
+	 * Determines the testsuite status
+	 * @return Failed or Passed
+	 */
 	private String calcSumStatus() {
 		boolean failedTestExists = false;
 
@@ -72,6 +65,12 @@ public class JUnitPoster {
 		return (failedTestExists) ? "Failed" : "Passed";
 	}
 
+	/**
+	 * Gets the requested Value in fieldName from entity
+	 * @param entity
+	 * @param fieldName
+	 * @return
+	 */
 	private String getField(Entity entity, String fieldName) {
 		List<Field> fields = entity.getFields().getField();
 		for (Field field : fields) {
@@ -81,45 +80,30 @@ public class JUnitPoster {
 		}
 		return null;
 	}
+	
 
 	/**
-	 * Posts the JUnit results to HPQC. 
+	 * Retrieves the testId from name, or creates one if it doesn't exist.
+	 * @return
+	 * @throws Exception
 	 */
-	public void publishTest() {
-		Logger.log("Beginning publishing JUnit results to HPQC...");
-		testId = getTestId();
-		Logger.logDebug("Found testID: " + testId);
-		Logger.log("Synching testcases with HPQC...");
-		syncTestSteps();
-		
-		Logger.log("Determining which test set to use...");
-		testSetId = suggestedTestSet();
-		Logger.logDebug("Using Test Set " + testSetId);
-		
-		Logger.log("Determining test instance details...");
-		testInstanceId = getTestInstanceId();
-		Logger.logDebug("Found testInstanceID: " + testInstanceId);
-		
-		Logger.log("Preparing a run for test instance...");
-		runId = createRun();
-		Logger.logDebug("Created run with runID:" + runId);
-		
-		Logger.log("Synchronizing testcase results with HPQC run");
-		addRunSteps();
-	}
-
-	private String getTestId() {
+	public String getTestId(String name) throws Exception {
 		try {
 			return con.getTestID(name);
 		} catch (HPALMRestMissingException e) {
 			Logger.log("No test matching the provided name (" + name + ") has been found. Creating one...");
-			return createTest();
+			return createTest(name);
 		} catch (Exception e) {
 			return (String) handleError(e);
 		}
 	}
 
-	private String createTest() {
+	/**
+	 * Creates a test using the provided name
+	 * @return
+	 * @throws Exception
+	 */
+	private String createTest(String name) throws Exception {
 		Entity test;
 		try {
 			test = con.createTest(name, null);
@@ -134,8 +118,10 @@ public class JUnitPoster {
 	 * the JUnit and adds new ones. Note that there is no identity tracking at this
 	 * time so previous tests will be lost if the key changes. The key is the test
 	 * classname + the test name
+	 * @param testId ID of test.
+	 * @throws Exception 
 	 */
-	private void syncTestSteps() {
+	public void syncTestSteps(String testId) throws Exception {
 		Entities entities = null;
 		try {
 			entities = con.getCurrentDesignSteps(testId);
@@ -154,16 +140,12 @@ public class JUnitPoster {
 		if (!entitiesList.isEmpty() || !casesList.isEmpty()) {
 			try {
 				con.checkOutTest(testId);
-			} catch (Exception e) {
-				handleError(e);
-			}
-			if (!entitiesList.isEmpty()) {
-				removeEntities(entitiesList);
-			}
-			if (!casesList.isEmpty()) {
-				createCaseEntities(casesList);
-			}
-			try {
+				if (!entitiesList.isEmpty()) {
+					removeEntities(entitiesList);
+				}
+				if (!casesList.isEmpty()) {
+					createCaseEntities(casesList);
+				}
 				con.checkInTest(testId);
 			} catch (Exception e) {
 				handleError(e);
@@ -176,8 +158,9 @@ public class JUnitPoster {
 	 * remove them from the list
 	 * 
 	 * @param cases
+	 * @throws Exception 
 	 */
-	private void createCaseEntities(List<LinkedTestCase> cases) {
+	private void createCaseEntities(List<LinkedTestCase> cases) throws Exception {
 		for (LinkedTestCase testCase : cases) {
 			Entity entity = null;
 			try {
@@ -194,8 +177,9 @@ public class JUnitPoster {
 	 * Removes each Entity in entities. Does not remove them from the list.
 	 * 
 	 * @param entities
+	 * @throws Exception 
 	 */
-	private void removeEntities(List<Entity> entities) {
+	private void removeEntities(List<Entity> entities) throws Exception {
 		for (Entity entity : entities) {
 			try {
 				con.deleteDesignStep(this.getField(entity, "id"));
@@ -230,7 +214,15 @@ public class JUnitPoster {
 		}
 	}
 
-	private String suggestedTestSet() {
+	/**
+	 * Returns ID of testSet to use. 
+	 * First considers the directly provided id. If its invalid or does not exist, then
+	 * it considers the provided TestSet name. If that is invalid, it finds the last run
+	 * executed in the project, and uses its TestSet (if guessTestSet is true) 
+	 * @return
+	 * @throws Exception
+	 */
+	public String getTestSetId() throws Exception {
 		if (isValidString(Config.getTestSetID())) {
 			if (verifyTestSetIdExists(Config.getTestSetID())) {
 				return Config.getTestSetID();
@@ -270,13 +262,17 @@ public class JUnitPoster {
 		return null;
 	}
 
-	private boolean verifyTestSetIdExists(String ID) {
+	
+	/**
+	 * Checks if a TestSet ID is valid
+	 * @param ID TestSet ID
+	 * @return True if exists, false if not
+	 * @throws Exception
+	 */
+	private boolean verifyTestSetIdExists(String ID) throws Exception {
 		try {
 			return (con.getTestSet(ID) != null);
-		} catch (HPALMRestException e) {
-			Logger.logDebug(new String(e.getResponse().getResponseData()));
-			Logger.logDebug(new String(e.getResponse().getResponseHeaders().toString()));
-			handleError(e);
+		} catch (HPALMRestMissingException e) {
 			return false;
 		} catch (Exception e) {
 			handleError(e);
@@ -284,32 +280,64 @@ public class JUnitPoster {
 		}
 	}
 
-	private String getTestSetIDFromName(String name) {
+	/**
+	 * Gets testSetID from name...
+	 * @param name Name of test set to search for
+	 * @return ID if found, null if not
+	 * @throws Exception
+	 */
+	private String getTestSetIDFromName(String name) throws Exception {
 		try {
 			return con.getTestSetID(name);
+		} catch (HPALMRestMissingException e) {
+			Logger.logError("No TestSets matching " + name + " were found.");
+			return null;
+		} catch (HPALMRestDuplicateException e) {
+			Logger.logError("Duplicate TestSets were found matching " + name + ".");
+			return null;
 		} catch (Exception e) {
 			return (String) handleError(e);
 		}
 	}
 
+	/**
+	 * Checks if a string is not null and not empty
+	 * @param string
+	 * @return
+	 */
 	private boolean isValidString(String string) {
 		return (string != null && string.length() > 0);
 	}
 
-	public String getTestInstanceId() {
+	
+	/**
+	 * Gets or creates an instance matching testId in the matching testSetId
+	 * @param testId ID of Test
+	 * @param testSetId ID of TestSet
+	 * @return Instance ID
+	 * @throws Exception
+	 */
+	public String getTestInstanceId(String testId, String testSetId) throws Exception {
 		Logger.logDebug("Getting test instance");
 		try {
 			String testInstanceId = con.getTestInstanceId(testSetId, testId);
 			return testInstanceId;
 		} catch (HPALMRestMissingException e) {
-			return createTestInstance();
+			return createTestInstance(testId, testSetId);
 		} catch (Exception e) {
 			handleError(e);
 		}
 		return null;
 	}
 
-	private String createTestInstance() {
+	/**
+	 * Creates a TestInstance for test matching testId in the TestSet matching testSetId
+	 * @param testId ID of test
+	 * @param testSetId ID of TestSet to use
+	 * @return ID of new testInstance
+	 * @throws Exception
+	 */
+	private String createTestInstance(String testId, String testSetId) throws Exception {
 		Entity test;
 		Logger.logDebug("Test instance does not exist, creating");
 		try {
@@ -320,10 +348,21 @@ public class JUnitPoster {
 		return getField(test, "id");
 	}
 
-	private String createRun() {
+	/**
+	 * Creates a run for the given instanceId
+	 * @param name Name of the run
+	 * @param testId ID of test
+	 * @param testSetId ID of TestSet
+	 * @param testInstanceId ID of testInstance
+	 * @return ID of run
+	 * @throws Exception
+	 */
+	public String createRun(String name, String testId, String testSetId, String testInstanceId) throws Exception {
 		String runId = null;
 		try {
 			runId = getField(con.createRun(name, testInstanceId, testSetId, testId), "id");
+			// See here https://community.saas.hpe.com/t5/Quality-Center-ALM-Practitioners/ALM-REST-API-Updating-Test-Instance-Status-without-creating-a/td-p/983522
+			// for why we are having to manually update the Run status instead of passing it in creation
 			con.updateRunStatus(runId, sumStatus);
 		} catch (Exception e) {
 			return (String) handleError(e);
@@ -332,17 +371,29 @@ public class JUnitPoster {
 
 	}
 
-	private void addRunSteps() {
+	/**
+	 * Syncs the results from JUnit to run step
+	 * @param runId
+	 * @throws Exception
+	 */
+	public void syncRunSteps(String runId) throws Exception {
 		for (LinkedTestCase testCase : cases) {
-			addRunStep(testCase);
+			addRunStep(testCase, runId);
 		}
 	}
 
-	private void addRunStep(LinkedTestCase testCase) {
+	/**
+	 * Posts the testCases information to the matching runStep
+	 * @param testCase
+	 * @param runId
+	 * @throws Exception
+	 */
+	private void addRunStep(LinkedTestCase testCase, String runId) throws Exception {
 		try {
 			Logger.logDebug("Finding Run Step for " + testCase.id);
 			String matchingRunStepId = getField(con.getMatchingRunStep(runId, testCase.id), "id");
 			Logger.logDebug("Updating Run Step wit status " + testCase.status.getTypeString());
+
 			con.updateRunStepStatus(runId, matchingRunStepId, testCase.status.getTypeString(), testCase.status.getMessage());
 		} catch (Exception e) {
 			handleError(e);
@@ -353,16 +404,12 @@ public class JUnitPoster {
 	public String toString() {
 		StringBuilder b = new StringBuilder();
 		b.append(cases.toString());
-		b.append("Name: " + name);
-		b.append("TestSetId: " + testSetId);
-		b.append("TestInstanceId: " + testInstanceId);
 		b.append("sumStatus: " + sumStatus);
 		return b.toString();
 	}
 
-	private Object handleError(Exception e) {
-		Logger.logDebug(e.getMessage());
-		return null;
+	private Object handleError(Exception e) throws Exception {
+		throw(e);
 	}
 
 }

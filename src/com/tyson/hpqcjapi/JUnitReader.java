@@ -30,17 +30,13 @@ public class JUnitReader {
 	/**
 	 * Create a JUnit parser from the xml file path
 	 * @param path Path to file. Relative from run or absolute. Include file ending.
+	 * @throws IOException 
+	 * @throws JAXBException 
 	 */
-	public JUnitReader(String path) {
+	public JUnitReader(String path) throws IOException, JAXBException {
 		this.path = path;
-		try {
-			String xml = new String(Files.readAllBytes(Paths.get(path)));
-			suites = EntityMarshallingUtils.marshal(Testsuites.class, xml);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (JAXBException e) {
-			e.printStackTrace();
-		}
+		String xml = new String(Files.readAllBytes(Paths.get(path)));
+		suites = EntityMarshallingUtils.marshal(Testsuites.class, xml);
 	}
 
 	/**

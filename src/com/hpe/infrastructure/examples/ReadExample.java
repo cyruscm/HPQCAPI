@@ -26,7 +26,6 @@ public class ReadExample {
 	public void readExample(final String serverUrl, final String domain, final String project, String username,
 			String password) throws Exception {
 
-		Config.initConfigs(new String[6]);
 		RestConnector con = RestConnector.getInstance().init(new HashMap<String, String>(), serverUrl, domain, project);
 
 		// Use the login example code to login for this test.
