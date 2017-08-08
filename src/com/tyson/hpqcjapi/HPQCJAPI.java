@@ -1,7 +1,9 @@
 package com.tyson.hpqcjapi;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import com.tyson.hpqcjapi.exceptions.HPALMRestException;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Constants;
 import com.tyson.hpqcjapi.utils.Logger;
@@ -36,12 +39,20 @@ public class HPQCJAPI {
 		
 		List<String> finalArgs = initConfig(args);
 		
-		if (finalArgs.size() > 2) {
+		if (finalArgs.size() > 1) {
 			Logger.logError("There are too many arguments. Expecting only JUnit Output path and the project name");
-		} else if (finalArgs.size() < 2) {
+		} else if (finalArgs.size() < 1) {
 			Logger.logError("There are not enough arguments. Expecting JUnit output path and project name");
 		} else {
-			//run(finalArgs.get(0), finalArgs.get(1));
+			try {
+				run(finalArgs.get(0));
+			} catch (HPALMRestException e) {
+				Logger.logDebug("Response Failure: " + e.getResponse().getFailure());
+				Logger.logDebug("Response Status: " + e.getResponse().getStatusCode());
+				Logger.logDebug("Response Headers: " + e.getResponse().getResponseHeaders());
+				Logger.logDebug("Response Body: " + new String(e.getResponse().getResponseData()));
+				throw(e);
+			}
 		}
 	}
 	
@@ -75,6 +86,14 @@ public class HPQCJAPI {
 		}
 
 		Config.initConfigs(parArgs, parFlags);
+		
+		if (Config.getTestId() == null || Config.getTestId().isEmpty()) {
+			if (Config.getTestName() == null || Config.getTestName().isEmpty()) {
+				Logger.logError("You must either give a test id (--testId [id]) or set a test name (--testName [name])");
+				System.exit(0);
+			}
+		}
+		
 		return commandLine.getArgList();
 	}
 	
@@ -95,6 +114,9 @@ public class HPQCJAPI {
 		options.addOption(addOpt("testsetfolder", "f", "The test set folder id to use (defaults to "+ Constants.FOLDERID + ", Unit Testing)"));
 		options.addOption(addOpt("testSetId", "s", "Test set id to use [takes precedent over testSetName and guessTestSet] (defaults to empty)"));
 		options.addOption(addOpt("testSetName", "S", "Test set name to use [takes precedent over guessTestSet] (defaults to empty)"));
+		options.addOption(addFlag("create-test", "c", "Create a test if one is not found", false));
+		options.addOption(addOpt("testId", "t", "The ID of the test to use. Defaults to empty"));
+		options.addOption(addOpt("testName", "n", "The name of the test to use. Defaults to empty. REQUIRED if not setting testId"));
 		options.addOption(addFlag("help", "h", "Print help information", false));
 		options.addOption(addFlag("guessTestSet", "g", "Flag: Attempt to guess the test set. Currently does so by using the test set from the last executed run in HPQC", false));
 		options.addOption(addFlag("verbose", "v", "Flag: Output debug information", false));
@@ -136,13 +158,14 @@ public class HPQCJAPI {
 	 * @param path Path to JUnit output file.
 	 * @throws Exception 
 	 */
-	public static void run(String name, String path) throws Exception {
+	public static void run(String path) throws Exception {
+		
 		JUnitReader reader = new JUnitReader(path);
-		JUnitPoster poster = new JUnitPoster(name, reader);
+		JUnitPoster poster = new JUnitPoster(reader);
 		Logger.logDebug("Inputted Tests: " + poster.toString());
 		
 		Logger.log("Beginning publishing JUnit results to HPQC...");
-		String testId = poster.getTestId(name);
+		String testId = poster.getTestId();
 		Logger.logDebug("Found testID: " + testId);
 		
 		Logger.log("Synching testcases with HPQC...");
@@ -157,7 +180,10 @@ public class HPQCJAPI {
 		Logger.logDebug("Found testInstanceID: " + testInstanceId);
 		
 		Logger.log("Preparing a run for test instance...");
-		String runId = poster.createRun(name, testId, testSetId, testInstanceId);
+		Date date = new Date();
+		String formattedDate = new SimpleDateFormat("M-d_H-m-s").format(date);
+		String runName = "Run_" + formattedDate;
+		String runId = poster.createRun(runName, testId, testSetId, testInstanceId);
 		Logger.logDebug("Created run with runID:" + runId);
 		
 		Logger.log("Synchronizing testcase results with HPQC run");

@@ -15,6 +15,11 @@ public class Constants {
 	
 	public static final String TEAM = "BI - BW";
 	public static final String FOLDERID = "1018";
+	
+	public static final String TESTID = "";
+	public static final String TESTNAME = "";
+	public static final String CREATETEST = "false";
+	
 	public static final String TESTSETID = "";
 	public static final String TESTSETNAME = "";
 	public static final String GUESSTESTSET = "true";

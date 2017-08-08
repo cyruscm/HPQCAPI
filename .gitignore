@@ -16,6 +16,7 @@ config.properties
 sampleJunit.xml
 .classpath
 .settings/
+.project
 
 # Package Files #
 *.jar

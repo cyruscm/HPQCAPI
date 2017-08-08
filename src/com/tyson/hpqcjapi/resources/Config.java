@@ -51,6 +51,18 @@ public class Config {
 	public static String getUnitTestFolderID() {
 		return prop.getProperty("testFolder");
 	}
+	
+	public static String getTestId() {
+		return prop.getProperty("testId");
+	}
+	
+	public static String getTestName() {
+		return prop.getProperty("testName");
+	}
+	
+	public static boolean createTest() {
+		return (prop.getProperty("createTest") == "true");
+	}
 
 	public static String getTestSetName() {
 		return prop.getProperty("testSetName");
@@ -109,10 +121,15 @@ public class Config {
 		prop.setProperty("password", Constants.PASSWORD);
 		prop.setProperty("team", Constants.TEAM);
 		prop.setProperty("testFolder", Constants.FOLDERID);
+		prop.setProperty("testId", Constants.TESTID);
+		prop.setProperty("testName", Constants.TESTNAME);
+		prop.setProperty("createTest", Constants.CREATETEST);
 		prop.setProperty("testSetId", Constants.TESTSETID);
 		prop.setProperty("testSetName", Constants.TESTSETNAME);
 		prop.setProperty("guessTestSet", Constants.GUESSTESTSET);
 		prop.setProperty("verbose", Constants.VERBOSE);
+		
+
 
 		OutputStream output = new FileOutputStream(DEFAULT_CONFIG_PATH);
 		prop.store(output,

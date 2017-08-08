@@ -37,7 +37,7 @@ public class JUnitPoster {
 	 * @param name
 	 * @param results
 	 */
-	public JUnitPoster(String name, JUnitReader results) {
+	public JUnitPoster(JUnitReader results) {
 		con = new ALMManager();
 		con.init();
 
@@ -86,14 +86,53 @@ public class JUnitPoster {
 	 * @return
 	 * @throws Exception
 	 */
-	public String getTestId(String name) throws Exception {
+	private String getTestIdFromName(String name) throws Exception {
 		try {
 			return con.getTestID(name);
 		} catch (HPALMRestMissingException e) {
-			Logger.log("No test matching the provided name (" + name + ") has been found. Creating one...");
-			return createTest(name);
+			Logger.log("No test matching the provided name (" + name + ") has been found.");
+			if (Config.createTest()) {
+				Logger.log("Creating a test with name " + name);
+				return createTest(name);
+			} else {
+				Logger.logError("You have not set --createTest flag. We cannot create a test.");
+				return null;
+			}
 		} catch (Exception e) {
 			return (String) handleError(e);
+		}
+	}
+	
+	public String getTestId() throws Exception {
+		if (isValidString(Config.getTestId())) {
+			if (verifyTestIdExists(Config.getTestId())) {
+				return Config.getTestId();
+			} else {
+				Logger.logError(
+						"Provided TestId of " + Config.getTestId() + " is not valid. Attempting remedy steps.");
+			}
+		}
+
+		if (isValidString(Config.getTestName())) {
+			String possibleId = getTestIdFromName(Config.getTestName());
+			if (possibleId != null) {
+				return possibleId;
+			}
+		} 
+
+		Logger.logError(
+				"There is no way to get a valid Test with your provided paramaters. Tool could not complete. Please add a valid Test Name or Test ID. To find a valid Test id, open ALM and go to Test Plan then right click the desired Test and select Properties. The ID is located in the top left of the popup window.");
+		return null;
+	}
+	
+	private boolean verifyTestIdExists(String id) throws Exception {
+		try {
+			return (con.getTest(id) != null);
+		} catch (HPALMRestMissingException e) {
+			return false;
+		} catch (Exception e) {
+			handleError(e);
+			return false;
 		}
 	}
 
@@ -229,7 +268,6 @@ public class JUnitPoster {
 				Logger.logError(
 						"Provided TestSetId of " + Config.getTestSetID() + " is not valid. Attempting remedy steps.");
 			}
-			return Config.getTestSetID();
 		}
 
 		if (isValidString(Config.getTestSetName())) {
