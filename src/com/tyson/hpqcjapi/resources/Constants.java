@@ -18,5 +18,6 @@ public class Constants {
 	public static final String TESTSETID = "";
 	public static final String TESTSETNAME = "";
 	public static final String GUESSTESTSET = "true";
+	public static final String VERBOSE = "false";
 
 }

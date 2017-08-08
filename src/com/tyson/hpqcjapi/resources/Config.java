@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import com.tyson.hpqcjapi.utils.Logger;
+
 /**
  * Created by MARTINCORB on 7/14/2017.
  */
@@ -98,6 +100,7 @@ public class Config {
 	}
 
 	private static void createConfig() throws IOException {
+		Logger.log("Config.properties not found, creating one.");
 		prop.setProperty("host", Constants.HOST);
 		prop.setProperty("port", Constants.PORT);
 		prop.setProperty("domain", Constants.DOMAIN);
@@ -109,6 +112,7 @@ public class Config {
 		prop.setProperty("testSetId", Constants.TESTSETID);
 		prop.setProperty("testSetName", Constants.TESTSETNAME);
 		prop.setProperty("guessTestSet", Constants.GUESSTESTSET);
+		prop.setProperty("verbose", Constants.VERBOSE);
 
 		OutputStream output = new FileOutputStream(DEFAULT_CONFIG_PATH);
 		prop.store(output,

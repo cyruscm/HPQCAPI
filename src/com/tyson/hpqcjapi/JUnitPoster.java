@@ -6,7 +6,6 @@ import java.util.List;
 import com.hpe.infrastructure.Entity;
 import com.hpe.infrastructure.Entity.Fields.Field;
 import com.tyson.hpqcjapi.exceptions.HPALMRestDuplicateException;
-import com.tyson.hpqcjapi.exceptions.HPALMRestException;
 import com.tyson.hpqcjapi.exceptions.HPALMRestMissingException;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Messages;
