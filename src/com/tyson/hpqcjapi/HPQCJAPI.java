@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.bind.JAXBException;
-
 /**
  * Created by MARTINCORB on 7/14/2017.
  */
@@ -19,12 +17,13 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import com.hpe.infrastructure.Constants;
+
 import com.tyson.hpqcjapi.resources.Config;
+import com.tyson.hpqcjapi.resources.Constants;
 import com.tyson.hpqcjapi.utils.Logger;
 
 /**
- * Allows upload and synchronization of JUnit ouput xml into HPQC.
+ * Allows upload and synchronization of JUnit output xml into HPQC.
  * If you're reading this after we've upgraded to 12.5, then don't bother. This is deprecated.
  * Please see http://alm-help.saas.hpe.com/en/12.53/online_help/Content/UG/t_integrate_external_tests_to_alm.htm
  * @author MARTINCORB
@@ -32,7 +31,7 @@ import com.tyson.hpqcjapi.utils.Logger;
  */
 public class HPQCJAPI {
 	public static void main(String[] args) throws Exception {
-		// https://stackoverflow.com/questions/45152242/hp-alm-rest-api-qcsession-411-authentication/45153033#45153033
+		// Property Explanation: https://stackoverflow.com/questions/45152242/hp-alm-rest-api-qcsession-411-authentication/45153033#45153033
 		System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 		
 		List<String> finalArgs = initConfig(args);
@@ -109,10 +108,10 @@ public class HPQCJAPI {
 	 */
 	private static void printHelp(Options options) {
 		HelpFormatter formatter = new HelpFormatter();
-		String header = "[...] [JUNITPATH] [TEST_NAME]";
+		String header = Constants.NAME + " [...] [JUNITPATH] [TEST_NAME]";
 		String footer = "Created 8/8/2017. Property of Tyson Foods Inc.";
 		formatter.setWidth(100);
-		formatter.printHelp("HPQCJAPI", header, options, footer, false);
+		formatter.printHelp(Constants.NAME + " " + Constants.VERSION, header, options, footer, false);
 		System.exit(0);
 	}
 	
