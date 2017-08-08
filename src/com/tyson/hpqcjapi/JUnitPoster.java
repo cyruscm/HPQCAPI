@@ -144,7 +144,7 @@ public class JUnitPoster {
 					removeEntities(entitiesList);
 				}
 				if (!casesList.isEmpty()) {
-					createCaseEntities(casesList);
+					createCaseEntities(casesList, testId);
 				}
 				con.checkInTest(testId);
 			} catch (Exception e) {
@@ -160,7 +160,7 @@ public class JUnitPoster {
 	 * @param cases
 	 * @throws Exception 
 	 */
-	private void createCaseEntities(List<LinkedTestCase> cases) throws Exception {
+	private void createCaseEntities(List<LinkedTestCase> cases, String testId) throws Exception {
 		for (LinkedTestCase testCase : cases) {
 			Entity entity = null;
 			try {

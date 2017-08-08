@@ -9,7 +9,9 @@ import com.tyson.hpqcjapi.utils.Logger;
 /**
  * This holds information about a test case that is shared between ALM and JUnit
  * 
- * @author MARTINCORB INVARIANTS: 1. TestCases are compared by 3 key values.
+ * @author MARTINCORB 
+ * 
+ * INVARIANTS: 1. TestCases are compared by 3 key values.
  *         testSuite must be the same. Additionally, the key must be the same
  *         (getKey()), which is the className and name combined.
  * 
