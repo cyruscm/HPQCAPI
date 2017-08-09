@@ -64,7 +64,7 @@ public class ConnectionManager {
 		}
 
 		for (String cookieName : Messages.EXPECTED_SITE_SESSION_COOKIES) {
-			if (con.getCookieString().contains(cookieName)) {
+			if (!con.getCookieString().contains(cookieName)) {
 				Logger.logError("Site-session post returned 200 but did not establish neccesary cookies (" + cookieName
 						+ "). Verify provided ALM version is 12.01");
 				return false;
@@ -154,6 +154,7 @@ public class ConnectionManager {
 			Response response = con.httpPost(QCSessionUrl, null, requestHeaders);
 			lastResponse = response;
 			success = (response.getStatusCode() == HttpURLConnection.HTTP_CREATED);
+			Logger.logDebug("response: " + response.getStatusCode());
 		} catch (Exception e) {
 			logError(Messages.UNEXPECTED_ERROR("establishQCSession", Endpoints.SITE_SESSION), e);
 		}

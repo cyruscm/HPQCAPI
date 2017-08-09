@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.hpe.infrastructure.Entity;
+import com.hpe.infrastructure.Response;
 import com.hpe.infrastructure.Entity.Fields.Field;
 import com.tyson.hpqcjapi.exceptions.HPALMRestAuthException;
 import com.tyson.hpqcjapi.exceptions.HPALMRestDuplicateException;
@@ -47,8 +48,10 @@ public class ALMManager extends ConnectionManager {
 		initErrorResponseMap();
 	}
 
-	public void init() {
-		this.validatedLogin();
+	public void init() throws HPALMRestException {
+		if (!this.validatedLogin()) {
+			throw(new HPALMRestException(lastResponse));
+		}
 
 	}
 
@@ -132,20 +135,11 @@ public class ALMManager extends ConnectionManager {
 
 		// Check if the exceptionClass has a constructor that takes a response. Else use
 		// default constructor
-		for (Constructor<?> constructor : exceptionClass.getConstructors()) {
-			Type[] paramTypes = constructor.getGenericParameterTypes();
-			if (paramTypes.length == 1 && paramTypes[0] instanceof com.hpe.infrastructure.Response) {
-				try {
-					exception = (Exception) constructor.newInstance(lastResponse);
-				} catch (Exception e) {
-					Logger.logError("There was an exception in creating an exception from an exception class "
-							+ exceptionClass.getName());
-					e.printStackTrace();
-					System.exit(0);
-				}
-				continue;
-			}
+		
+		if ( (exceptionClass.isAssignableFrom(HPALMRestException.class)) || (exceptionClass.equals(HPALMRestException.class)) ) {
+			exception = exceptionClass.getConstructor(Response.class).newInstance(lastResponse);
 		}
+		
 
 		if (exception == null) {
 			try {
@@ -153,8 +147,7 @@ public class ALMManager extends ConnectionManager {
 			} catch (Exception e) {
 				Logger.logError("There was an exception in creating an exception from an exception class "
 						+ exceptionClass.getName());
-				Logger.logError(e.toString());
-				System.exit(0);
+				throw(e);
 			}
 		}
 

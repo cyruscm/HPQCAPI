@@ -4,7 +4,7 @@ import com.tyson.hpqcjapi.resources.Config;
 
 public class Logger {
 
-	private static final String LOGPREFIX = "";
+	private static final String LOGPREFIX = "[INFO] ";
 	private static final String WARNPREFIX = "[WARN] ";
 	private static final String DEBUGPREFIX = "[DEBUG] ";
 	private static final String ERRORPREFIX = "[ERROR] ";
@@ -18,12 +18,12 @@ public class Logger {
 	}
 
 	public static void logError(String input) {
-		if (Config.verbose()) {
-			System.out.println(ERRORPREFIX + input);
-		}
+		System.out.println(ERRORPREFIX + input);
 	}
 
 	public static void logDebug(String input) {
-		System.out.println(DEBUGPREFIX + input);
+		if (Config.verbose()) {
+			System.out.println(DEBUGPREFIX + input);
+		}
 	}
 }

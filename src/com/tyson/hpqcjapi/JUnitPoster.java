@@ -6,6 +6,7 @@ import java.util.List;
 import com.hpe.infrastructure.Entity;
 import com.hpe.infrastructure.Entity.Fields.Field;
 import com.tyson.hpqcjapi.exceptions.HPALMRestDuplicateException;
+import com.tyson.hpqcjapi.exceptions.HPALMRestException;
 import com.tyson.hpqcjapi.exceptions.HPALMRestMissingException;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Messages;
@@ -36,8 +37,9 @@ public class JUnitPoster {
 	 * Prepares and returns JUnitPoster with name and results
 	 * @param name
 	 * @param results
+	 * @throws HPALMRestException 
 	 */
-	public JUnitPoster(JUnitReader results) {
+	public JUnitPoster(JUnitReader results) throws HPALMRestException {
 		con = new ALMManager();
 		con.init();
 
@@ -122,7 +124,7 @@ public class JUnitPoster {
 
 		Logger.logError(
 				"There is no way to get a valid Test with your provided paramaters. Tool could not complete. Please add a valid Test Name or Test ID. To find a valid Test id, open ALM and go to Test Plan then right click the desired Test and select Properties. The ID is located in the top left of the popup window.");
-		return null;
+		throw(new IllegalArgumentException());
 	}
 	
 	private boolean verifyTestIdExists(String id) throws Exception {
@@ -261,23 +263,30 @@ public class JUnitPoster {
 	 * @throws Exception
 	 */
 	public String getTestSetId() throws Exception {
-		if (isValidString(Config.getTestSetID())) {
-			if (verifyTestSetIdExists(Config.getTestSetID())) {
-				return Config.getTestSetID();
+		
+		String cTestSetId = Config.getTestSetID();
+		String cTestSetName = Config.getTestSetName();
+		
+		if (isValidString(cTestSetId)) {
+			if (verifyTestSetIdExists(cTestSetId)) {
+				return cTestSetId;
 			} else {
-				Logger.logError(
-						"Provided TestSetId of " + Config.getTestSetID() + " is not valid. Attempting remedy steps.");
+				Logger.logError("Provided TestSetId of " + cTestSetId + " is not valid. Attempting remedy steps.");
 			}
+		} else {
+			Logger.logDebug("testSetID is not a valid string. Skipping ID from ID steps.");
 		}
 
-		if (isValidString(Config.getTestSetName())) {
-			String possibleId = getTestSetIDFromName(Config.getTestSetName());
+		if (isValidString(cTestSetName)) {
+			String possibleId = getTestSetIDFromName(cTestSetName);
 			if (possibleId != null) {
 				return possibleId;
 			} else {
-				Logger.logError("Provided TestName of " + Config.getTestSetName()
+				Logger.logError("Provided TestName of " + cTestSetName
 						+ " is not valid. Attempting remedy step automatically determining test set.");
 			}
+		} else {
+			Logger.logDebug("testSetName is not a valid string. Skipping ID from name steps.");
 		}
 
 		if (Config.guessTestSet()) {
@@ -296,7 +305,7 @@ public class JUnitPoster {
 		}
 		Logger.logError(
 				"There is no way to get a valid TestSet with your provided paramaters. Tool could not complete. Please add a valid TestSet Name or TestSet ID. To find a valid TestSet id, open ALM and go to Test Lab then right click the desired TestSet and select Properties. The ID is located in the top left of the popup window.");
-		return null;
+		throw(new IllegalArgumentException());
 	}
 
 	

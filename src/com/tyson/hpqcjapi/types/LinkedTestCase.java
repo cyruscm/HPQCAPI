@@ -20,8 +20,12 @@ import com.tyson.hpqcjapi.utils.Logger;
  *         be dynamically populated 4. systemOut, SystemErr, and time are
  *         optional, as defined by XSD standards of JUnit.
  */
-public class LinkedTestCase {
+public class LinkedTestCase implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2939898419050393800L;
 	public String testSuite;
 	public String className;
 	public String name;
@@ -44,10 +48,17 @@ public class LinkedTestCase {
 			return false;
 		}
 		LinkedTestCase mappedObj = (LinkedTestCase) obj;
-		if (mappedObj.testSuite == this.testSuite && mappedObj.getKey().equals(this.getKey())) {
-			return true;
+		if (!mappedObj.testSuite.equals(this.testSuite)) {
+			return false;
 		}
-		return false;
+		if (!mappedObj.getKey().equals(this.getKey())) {
+			return false;
+		}
+		if (!mappedObj.status.equals(this.status)) {
+			return false;
+		}
+		
+		return true;
 	}
 
 	public void linkToEntity(Entity entity) {

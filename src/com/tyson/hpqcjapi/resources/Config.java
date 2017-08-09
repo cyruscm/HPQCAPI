@@ -17,8 +17,9 @@ import com.tyson.hpqcjapi.utils.Logger;
  */
 public class Config {
 	private static Properties prop;
+	private static String jUnitPath = "";
 
-	private final static String DEFAULT_CONFIG_PATH = "config.properties";
+	private final static String DEFAULT_CONFIG_PATH = "hpqcjapi.properties";
 
 	public static String getHost() {
 		return prop.getProperty("host");
@@ -78,6 +79,28 @@ public class Config {
 	
 	public static boolean verbose() {
 		return (prop.getProperty("verbose") == "true");
+	}
+	
+	public static String getJunitPath() {
+		return (jUnitPath);
+	}
+	
+	public static void setJunitPath(String path) {
+		jUnitPath = path;
+	}
+	
+	public static void reset() throws IOException {
+		prop = new Properties();
+		readConfig(DEFAULT_CONFIG_PATH);
+	}
+	
+	/**
+	 * This should only be used for testing purposes.
+	 * @param name
+	 * @param value
+	 */
+	public static void overrideProperty(String name, String value) {
+		prop.setProperty(name, value);
 	}
 
 	/**

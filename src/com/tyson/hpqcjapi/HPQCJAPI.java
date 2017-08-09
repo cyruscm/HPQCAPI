@@ -1,9 +1,11 @@
 package com.tyson.hpqcjapi;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.io.ObjectOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import com.hpe.infrastructure.Base64Encoder;
 import com.tyson.hpqcjapi.exceptions.HPALMRestException;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Constants;
@@ -33,26 +36,51 @@ import com.tyson.hpqcjapi.utils.Logger;
  *
  */
 public class HPQCJAPI {
+	
+	public static boolean valid_input = true;
+	
 	public static void main(String[] args) throws Exception {
+		try {
+			if (prepareSteps(args)) {
+				run(Config.getJunitPath());
+			} else {
+				Logger.logDebug("Failed input validation");
+			}
+		} catch (HPALMRestException e) {
+			Logger.logDebug("Response Failure: " + e.getResponse().getFailure());
+			Logger.logDebug("Response Status: " + e.getResponse().getStatusCode());
+			Logger.logDebug("Response Headers: " + e.getResponse().getResponseHeaders());
+			Logger.logDebug("Response Body: " + new String(e.getResponse().getResponseData()));
+			throw(e);
+		}
+	}
+	
+	/**
+	 * Prepares all needed configs and steps.
+	 * @return True if ready, false if not.
+	 * @throws IOException 
+	 * @throws ParseException 
+	 */
+	public static boolean prepareSteps(String[] args) throws ParseException, IOException {
 		// Property Explanation: https://stackoverflow.com/questions/45152242/hp-alm-rest-api-qcsession-411-authentication/45153033#45153033
 		System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-		
+	
 		List<String> finalArgs = initConfig(args);
+		if (!valid_input) { 
+			return false; 
+		}
 		
 		if (finalArgs.size() > 1) {
-			Logger.logError("There are too many arguments. Expecting only JUnit Output path and the project name");
+			Logger.logError("There are too many arguments. Expecting only JUnit Output path");
+			valid_input = false;
+			return false;
 		} else if (finalArgs.size() < 1) {
-			Logger.logError("There are not enough arguments. Expecting JUnit output path and project name");
+			Logger.logError("There are not enough arguments. Expecting JUnit output path");
+			valid_input = false;
+			return false;
 		} else {
-			try {
-				run(finalArgs.get(0));
-			} catch (HPALMRestException e) {
-				Logger.logDebug("Response Failure: " + e.getResponse().getFailure());
-				Logger.logDebug("Response Status: " + e.getResponse().getStatusCode());
-				Logger.logDebug("Response Headers: " + e.getResponse().getResponseHeaders());
-				Logger.logDebug("Response Body: " + new String(e.getResponse().getResponseData()));
-				throw(e);
-			}
+			Config.setJunitPath(finalArgs.get(0));
+			return true;
 		}
 	}
 	
@@ -68,8 +96,16 @@ public class HPQCJAPI {
 		Options options = initOptions();
 		CommandLineParser parser = new DefaultParser();
 		
+		CommandLine commandLine = null;
+		try {
+			commandLine = parser.parse(options, args);
+		} catch (ParseException e) {
+			Logger.logError(e.getLocalizedMessage());
+			Logger.logError("Use option -h for help on arguments");
+			valid_input = false;
+			return new ArrayList<String>();
+		}
 		
-		CommandLine commandLine = parser.parse(options, args);
 		
 		if (commandLine.hasOption("h")) {
 			printHelp(options);
@@ -87,12 +123,15 @@ public class HPQCJAPI {
 
 		Config.initConfigs(parArgs, parFlags);
 		
+		
 		if (Config.getTestId() == null || Config.getTestId().isEmpty()) {
 			if (Config.getTestName() == null || Config.getTestName().isEmpty()) {
+				Logger.logDebug("id:" + Config.getTestId() + " -- Name: " + Config.getTestName());
 				Logger.logError("You must either give a test id (--testId [id]) or set a test name (--testName [name])");
-				System.exit(0);
+				valid_input = false;
 			}
 		}
+		
 		
 		return commandLine.getArgList();
 	}
@@ -110,11 +149,11 @@ public class HPQCJAPI {
 		options.addOption(addOpt("project", "D", "The project name to connect to (defaults to " + Constants.PROJECT + ")"));
 		options.addOption(addOpt("username", "u", "The username to authenticate with. (defaults to empty)"));
 		options.addOption(addOpt("password", "p", "The password to authenticate with. (defaults to empty)"));
-		options.addOption(addOpt("team", "t", "The process team to set for the test (defaults to "+ Constants.TEAM + ")"));
-		options.addOption(addOpt("testsetfolder", "f", "The test set folder id to use (defaults to "+ Constants.FOLDERID + ", Unit Testing)"));
+		options.addOption(addOpt("team", "T", "The process team to set for the test (defaults to "+ Constants.TEAM + ")"));
+		options.addOption(addOpt("testFolder", "f", "The test set folder id to use (defaults to "+ Constants.FOLDERID + ", Unit Testing)"));
 		options.addOption(addOpt("testSetId", "s", "Test set id to use [takes precedent over testSetName and guessTestSet] (defaults to empty)"));
 		options.addOption(addOpt("testSetName", "S", "Test set name to use [takes precedent over guessTestSet] (defaults to empty)"));
-		options.addOption(addFlag("create-test", "c", "Create a test if one is not found", false));
+		options.addOption(addFlag("createTest", "c", "Create a test if one is not found", false));
 		options.addOption(addOpt("testId", "t", "The ID of the test to use. Defaults to empty"));
 		options.addOption(addOpt("testName", "n", "The name of the test to use. Defaults to empty. REQUIRED if not setting testId"));
 		options.addOption(addFlag("help", "h", "Print help information", false));
@@ -158,11 +197,26 @@ public class HPQCJAPI {
 	 * @param path Path to JUnit output file.
 	 * @throws Exception 
 	 */
-	public static void run(String path) throws Exception {
+	public static boolean run(String path) throws Exception {
 		
 		JUnitReader reader = new JUnitReader(path);
+		
+		ByteArrayOutputStream bos = null;
+		try {
+		    bos = new ByteArrayOutputStream();
+		    ObjectOutputStream obj_out = new ObjectOutputStream(bos);
+		    obj_out.writeObject(reader.parseSuites());
+		} catch (IOException e) {
+		    e.printStackTrace();
+		}
+
+		byte[] serialized = bos.toByteArray();
+		String encoded = Base64Encoder.encode(serialized);
+		
+		System.out.print("The serialized output is: " + encoded); 
+		
+		/**
 		JUnitPoster poster = new JUnitPoster(reader);
-		Logger.logDebug("Inputted Tests: " + poster.toString());
 		
 		Logger.log("Beginning publishing JUnit results to HPQC...");
 		String testId = poster.getTestId();
@@ -188,8 +242,8 @@ public class HPQCJAPI {
 		
 		Logger.log("Synchronizing testcase results with HPQC run");
 		poster.syncRunSteps(runId);
-		
-		Logger.logDebug("Linked Tests: " + poster.toString());
+		Logger.log("Finished."); **/
+		return true;
 	}
 	
 }

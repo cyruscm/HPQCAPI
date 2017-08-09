@@ -44,7 +44,7 @@ public class JUnitReader {
 	 * @return
 	 */
 	public List<LinkedTestCase> parseSuites() {
-		Logger.log("Parsing JUnit xml at " + path);
+		Logger.log("Parsing JUnit xml at " + Paths.get(path).toAbsolutePath());
 		List<LinkedTestCase> cases = new ArrayList<LinkedTestCase>();
 		for (Testsuite suite : suites.getTestsuite()) {
 			for (Testcase testcase : suite.getTestcase()) {
