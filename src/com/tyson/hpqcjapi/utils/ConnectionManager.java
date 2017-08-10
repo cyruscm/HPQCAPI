@@ -154,7 +154,6 @@ public class ConnectionManager {
 			Response response = con.httpPost(QCSessionUrl, null, requestHeaders);
 			lastResponse = response;
 			success = (response.getStatusCode() == HttpURLConnection.HTTP_CREATED);
-			Logger.logDebug("response: " + response.getStatusCode());
 		} catch (Exception e) {
 			logError(Messages.UNEXPECTED_ERROR("establishQCSession", Endpoints.SITE_SESSION), e);
 		}
@@ -353,10 +352,11 @@ public class ConnectionManager {
 		String query = null;
 		if (queryParams != null && queryParams.size() > 0) {
 			StringBuilder b = new StringBuilder();
-			b.append("query=");
+			b.append("query={");
 			for (Map.Entry<String, String> entry : queryParams.entrySet()) {
-				b.append("{" + entry.getKey() + "[" + entry.getValue() + "]}&");
+				b.append(entry.getKey() + "[" + entry.getValue() + "];");
 			}
+			b.append("}");
 			query = b.toString();
 		}
 
@@ -371,6 +371,7 @@ public class ConnectionManager {
 
 		Map<String, String> requestHeaders = new HashMap<String, String>();
 		requestHeaders.put("Accept", "application/xml");
+		
 
 		Entities entities = null;
 		try {

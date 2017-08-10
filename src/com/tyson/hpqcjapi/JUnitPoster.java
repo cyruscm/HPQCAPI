@@ -28,10 +28,10 @@ import com.tyson.hpqcjapi.utils.Logger;
  */
 public class JUnitPoster {
 
-	private ALMManager con;
-	private String sumStatus;
+	protected ALMManager con;
+	protected String sumStatus;
 
-	private List<LinkedTestCase> cases;
+	protected List<LinkedTestCase> cases;
 
 	/**
 	 * Prepares and returns JUnitPoster with name and results
@@ -65,6 +65,10 @@ public class JUnitPoster {
 
 		return (failedTestExists) ? "Failed" : "Passed";
 	}
+	
+	public String getSumStatus() {
+		return sumStatus;
+	}
 
 	/**
 	 * Gets the requested Value in fieldName from entity
@@ -72,7 +76,7 @@ public class JUnitPoster {
 	 * @param fieldName
 	 * @return
 	 */
-	private String getField(Entity entity, String fieldName) {
+	protected String getField(Entity entity, String fieldName) {
 		List<Field> fields = entity.getFields().getField();
 		for (Field field : fields) {
 			if (field.getName().equals(fieldName)) {
@@ -87,24 +91,31 @@ public class JUnitPoster {
 	 * Retrieves the testId from name, or creates one if it doesn't exist.
 	 * @return
 	 * @throws Exception
+	 * @throws IllegalArgumentException If test name is unmatched and no createFlag is set.
 	 */
 	private String getTestIdFromName(String name) throws Exception {
 		try {
 			return con.getTestID(name);
 		} catch (HPALMRestMissingException e) {
 			Logger.log("No test matching the provided name (" + name + ") has been found.");
+			
 			if (Config.createTest()) {
 				Logger.log("Creating a test with name " + name);
 				return createTest(name);
 			} else {
 				Logger.logError("You have not set --createTest flag. We cannot create a test.");
-				return null;
+				throw(new IllegalArgumentException());
 			}
-		} catch (Exception e) {
-			return (String) handleError(e);
 		}
 	}
 	
+	
+	/**
+	 * Gets the testId matching Config properties.
+	 * @return ID of test
+	 * @throws Exception
+	 * @throws IllegalArgumentException If incorrect Config properties are set.
+	 */
 	public String getTestId() throws Exception {
 		if (isValidString(Config.getTestId())) {
 			if (verifyTestIdExists(Config.getTestId())) {
@@ -132,9 +143,6 @@ public class JUnitPoster {
 			return (con.getTest(id) != null);
 		} catch (HPALMRestMissingException e) {
 			return false;
-		} catch (Exception e) {
-			handleError(e);
-			return false;
 		}
 	}
 
@@ -144,12 +152,7 @@ public class JUnitPoster {
 	 * @throws Exception
 	 */
 	private String createTest(String name) throws Exception {
-		Entity test;
-		try {
-			test = con.createTest(name, null);
-		} catch (Exception e) {
-			return (String) handleError(e);
-		}
+		Entity test = con.createTest(name, null);
 		return getField(test, "id");
 	}
 
@@ -162,12 +165,7 @@ public class JUnitPoster {
 	 * @throws Exception 
 	 */
 	public void syncTestSteps(String testId) throws Exception {
-		Entities entities = null;
-		try {
-			entities = con.getCurrentDesignSteps(testId);
-		} catch (Exception e) {
-			handleError(e);
-		}
+		Entities entities = con.getCurrentDesignSteps(testId);
 		List<Entity> entitiesList = new ArrayList<Entity>();
 
 		entitiesList.addAll(entities.getEntities());
@@ -178,18 +176,12 @@ public class JUnitPoster {
 		linkEqualCases(entitiesList, casesList);
 
 		if (!entitiesList.isEmpty() || !casesList.isEmpty()) {
-			try {
-				con.checkOutTest(testId);
-				if (!entitiesList.isEmpty()) {
-					removeEntities(entitiesList);
-				}
-				if (!casesList.isEmpty()) {
-					createCaseEntities(casesList, testId);
-				}
-				con.checkInTest(testId);
-			} catch (Exception e) {
-				handleError(e);
-			}
+			con.checkOutTest(testId);
+			
+			removeEntities(entitiesList);
+			createCaseEntities(casesList, testId);
+			
+			con.checkInTest(testId);
 		}
 	}
 
@@ -202,13 +194,8 @@ public class JUnitPoster {
 	 */
 	private void createCaseEntities(List<LinkedTestCase> cases, String testId) throws Exception {
 		for (LinkedTestCase testCase : cases) {
-			Entity entity = null;
-			try {
-				entity = con.createDesignStep(testCase.testSuite, testId, Messages.DESIGN_STEP_DESCRIPTION,
+			Entity entity = con.createDesignStep(testCase.testSuite, testId, Messages.DESIGN_STEP_DESCRIPTION,
 						testCase.getKey(), null);
-			} catch (Exception e) {
-				handleError(e);
-			}
 			testCase.linkToEntity(entity);
 		}
 	}
@@ -221,11 +208,7 @@ public class JUnitPoster {
 	 */
 	private void removeEntities(List<Entity> entities) throws Exception {
 		for (Entity entity : entities) {
-			try {
-				con.deleteDesignStep(this.getField(entity, "id"));
-			} catch (Exception e) {
-				handleError(e);
-			}
+			con.deleteDesignStep(this.getField(entity, "id"));
 		}
 	}
 
@@ -274,7 +257,7 @@ public class JUnitPoster {
 				Logger.logError("Provided TestSetId of " + cTestSetId + " is not valid. Attempting remedy steps.");
 			}
 		} else {
-			Logger.logDebug("testSetID is not a valid string. Skipping ID from ID steps.");
+			Logger.logDebug("testSetID is not a valid string. Skipping ID steps.");
 		}
 
 		if (isValidString(cTestSetName)) {
@@ -286,16 +269,12 @@ public class JUnitPoster {
 						+ " is not valid. Attempting remedy step automatically determining test set.");
 			}
 		} else {
-			Logger.logDebug("testSetName is not a valid string. Skipping ID from name steps.");
+			Logger.logDebug("testSetName is not a valid string. Skipping name steps.");
 		}
 
 		if (Config.guessTestSet()) {
-			Entity suggestedEntity = null;
-			try {
-				suggestedEntity = con.getLatestRun();
-			} catch (Exception e) {
-				handleError(e);
-			}
+			Entity suggestedEntity = con.getLatestRun();
+			
 			if (suggestedEntity != null) {
 				return getField(suggestedEntity, "cycle-id");
 			} else {
@@ -320,9 +299,6 @@ public class JUnitPoster {
 			return (con.getTestSet(ID) != null);
 		} catch (HPALMRestMissingException e) {
 			return false;
-		} catch (Exception e) {
-			handleError(e);
-			return false;
 		}
 	}
 
@@ -341,8 +317,6 @@ public class JUnitPoster {
 		} catch (HPALMRestDuplicateException e) {
 			Logger.logError("Duplicate TestSets were found matching " + name + ".");
 			return null;
-		} catch (Exception e) {
-			return (String) handleError(e);
 		}
 	}
 
@@ -370,10 +344,15 @@ public class JUnitPoster {
 			return testInstanceId;
 		} catch (HPALMRestMissingException e) {
 			return createTestInstance(testId, testSetId);
-		} catch (Exception e) {
-			handleError(e);
+		} 
+	}
+	
+	private boolean verifyTestInstanceExists(String id) throws Exception {
+		try {
+			return (con.getTestInstance(id) != null);
+		} catch (HPALMRestMissingException e) {
+			return false;
 		}
-		return null;
 	}
 
 	/**
@@ -384,13 +363,17 @@ public class JUnitPoster {
 	 * @throws Exception
 	 */
 	private String createTestInstance(String testId, String testSetId) throws Exception {
-		Entity test;
+
 		Logger.logDebug("Test instance does not exist, creating");
-		try {
-			test = con.createTestInstance(testSetId, testId, null);
-		} catch (Exception e) {
-			return (String) handleError(e);
+
+		if (!verifyTestSetIdExists(testSetId)) {
+			throw(new IllegalArgumentException("Provided TestSetId of " + testSetId +" is not valid"));
+		} else if (!verifyTestIdExists(testId)) {
+			throw(new IllegalArgumentException("Provided TestID of " + testId + " is not valid."));
 		}
+		
+		Entity test = con.createTestInstance(testSetId, testId, null);
+
 		return getField(test, "id");
 	}
 
@@ -404,15 +387,18 @@ public class JUnitPoster {
 	 * @throws Exception
 	 */
 	public String createRun(String name, String testId, String testSetId, String testInstanceId) throws Exception {
-		String runId = null;
-		try {
-			runId = getField(con.createRun(name, testInstanceId, testSetId, testId), "id");
-			// See here https://community.saas.hpe.com/t5/Quality-Center-ALM-Practitioners/ALM-REST-API-Updating-Test-Instance-Status-without-creating-a/td-p/983522
-			// for why we are having to manually update the Run status instead of passing it in creation
-			con.updateRunStatus(runId, sumStatus);
-		} catch (Exception e) {
-			return (String) handleError(e);
+		if (!verifyTestSetIdExists(testSetId)) {
+			throw(new IllegalArgumentException("Provided TestSetId of " + testSetId +" is not valid"));
+		} else if (!verifyTestIdExists(testId)) {
+			throw(new IllegalArgumentException("Provided TestID of " + testId + " is not valid."));
+		} else if (!verifyTestInstanceExists(testInstanceId)) {
+			throw(new IllegalArgumentException("Provided TestInstanceId of " + testInstanceId + " is not valid."));
 		}
+		
+		String runId = getField(con.createRun(name, testInstanceId, testSetId, testId), "id");
+		// See here https://community.saas.hpe.com/t5/Quality-Center-ALM-Practitioners/ALM-REST-API-Updating-Test-Instance-Status-without-creating-a/td-p/983522
+		// for why we are having to manually update the Run status instead of passing it in creation
+		con.updateRunStatus(runId, sumStatus);
 		return runId;
 
 	}
@@ -435,15 +421,16 @@ public class JUnitPoster {
 	 * @throws Exception
 	 */
 	private void addRunStep(LinkedTestCase testCase, String runId) throws Exception {
-		try {
-			Logger.logDebug("Finding Run Step for " + testCase.id);
-			String matchingRunStepId = getField(con.getMatchingRunStep(runId, testCase.id), "id");
-			Logger.logDebug("Updating Run Step wit status " + testCase.status.getTypeString());
-
-			con.updateRunStepStatus(runId, matchingRunStepId, testCase.status.getTypeString(), testCase.status.getMessage());
-		} catch (Exception e) {
-			handleError(e);
-		}
+		String matchingRunStepId = getField(con.getMatchingRunStep(runId, testCase.id), "id");
+		testCase.runStepId = matchingRunStepId;
+		con.updateRunStepStatus(runId, matchingRunStepId, testCase.status.getTypeString(), testCase.status.getMessage());
+	}
+	
+	/**
+	 * Closes connection if one is active and logs out of alm. 
+	 */
+	public void close() {
+		con.logout();
 	}
 
 	@Override
@@ -453,9 +440,4 @@ public class JUnitPoster {
 		b.append("sumStatus: " + sumStatus);
 		return b.toString();
 	}
-
-	private Object handleError(Exception e) throws Exception {
-		throw(e);
-	}
-
 }

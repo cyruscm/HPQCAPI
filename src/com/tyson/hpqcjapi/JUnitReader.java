@@ -1,6 +1,7 @@
 package com.tyson.hpqcjapi;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -36,9 +37,23 @@ public class JUnitReader {
 	public JUnitReader(String path) throws IOException, JAXBException {
 		this.path = path;
 		String xml = new String(Files.readAllBytes(Paths.get(path)));
+		getClass().getResourceAsStream("bla");
+		suites = EntityMarshallingUtils.marshal(Testsuites.class, xml);
+	}
+	
+	
+	public JUnitReader(InputStream in) throws JAXBException {
+		path = "internal resources location";
+		String xml = readStream(in);
 		suites = EntityMarshallingUtils.marshal(Testsuites.class, xml);
 	}
 
+	@SuppressWarnings("resource")
+	private String readStream(InputStream in) {
+		java.util.Scanner s = new java.util.Scanner(in).useDelimiter("\\A");
+		return s.hasNext() ? s.next() : "";
+	}
+	
 	/**
 	 * Output a list of List of LinkedTestCases parsed form inputted xml
 	 * @return

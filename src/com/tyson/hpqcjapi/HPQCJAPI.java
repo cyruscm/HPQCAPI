@@ -1,11 +1,9 @@
 package com.tyson.hpqcjapi;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +20,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.hpe.infrastructure.Base64Encoder;
 import com.tyson.hpqcjapi.exceptions.HPALMRestException;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Constants;
@@ -200,22 +197,6 @@ public class HPQCJAPI {
 	public static boolean run(String path) throws Exception {
 		
 		JUnitReader reader = new JUnitReader(path);
-		
-		ByteArrayOutputStream bos = null;
-		try {
-		    bos = new ByteArrayOutputStream();
-		    ObjectOutputStream obj_out = new ObjectOutputStream(bos);
-		    obj_out.writeObject(reader.parseSuites());
-		} catch (IOException e) {
-		    e.printStackTrace();
-		}
-
-		byte[] serialized = bos.toByteArray();
-		String encoded = Base64Encoder.encode(serialized);
-		
-		System.out.print("The serialized output is: " + encoded); 
-		
-		/**
 		JUnitPoster poster = new JUnitPoster(reader);
 		
 		Logger.log("Beginning publishing JUnit results to HPQC...");
@@ -242,7 +223,7 @@ public class HPQCJAPI {
 		
 		Logger.log("Synchronizing testcase results with HPQC run");
 		poster.syncRunSteps(runId);
-		Logger.log("Finished."); **/
+		Logger.log("Finished."); 
 		return true;
 	}
 	

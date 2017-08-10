@@ -136,12 +136,9 @@ public class ALMManager extends ConnectionManager {
 		// Check if the exceptionClass has a constructor that takes a response. Else use
 		// default constructor
 		
-		if ( (exceptionClass.isAssignableFrom(HPALMRestException.class)) || (exceptionClass.equals(HPALMRestException.class)) ) {
+		if ((exceptionClass.getSuperclass().equals((HPALMRestException.class))) || (exceptionClass.equals(HPALMRestException.class)) ) {
 			exception = exceptionClass.getConstructor(Response.class).newInstance(lastResponse);
-		}
-		
-
-		if (exception == null) {
+		} else {
 			try {
 				exception = exceptionClass.newInstance();
 			} catch (Exception e) {
@@ -188,6 +185,7 @@ public class ALMManager extends ConnectionManager {
 		genericResponseHandler(entities, responseMap);
 		return entities;
 	}
+
 
 	// ================================================================================
 	// Tests
@@ -392,6 +390,10 @@ public class ALMManager extends ConnectionManager {
 		responseMap.put(HPALMRestMissingException.class, Messages.ENTITY_MISSING);
 		return genericGetEntity(Endpoints.TEST_INSTANCE(id), responseMap);
 	}
+	
+	public Entity deleteTestInstance(String id) throws Exception {
+		return genericDeleteEntity(Endpoints.TEST_INSTANCE(id), null);
+	}
 
 	public Entities queryTestInstances(Map<String, String> queryParameters) throws Exception {
 		return genericReadCollection(Endpoints.TEST_INSTANCES, queryParameters, null);
@@ -537,7 +539,6 @@ public class ALMManager extends ConnectionManager {
 		xml.addField("status", status);
 		xml.addField("actual", message);
 		Entity toReturn = updateRunStep(runId, id, xml.publish());
-		Logger.logDebug("Response: " + new String(lastResponse.getResponseData()));
 		return toReturn;
 	}
 
@@ -548,7 +549,12 @@ public class ALMManager extends ConnectionManager {
 	public Entity getMatchingRunStep(String runId, String designStepId) throws Exception {
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put("desstep-id", designStepId);
-		return genericReadCollection(Endpoints.RUN_STEPS(runId), queryParams, null).getEntities().get(0);
+		Entities entities = genericReadCollection(Endpoints.RUN_STEPS(runId), queryParams, null);
+		if (entities == null) {
+			return null;
+		} else {
+			return entities.getEntities().get(0);
+		} 
 	}
 
 }

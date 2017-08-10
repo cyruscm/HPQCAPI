@@ -17,6 +17,11 @@ sampleJunit.xml
 .classpath
 .settings/
 .project
+bin/
+.idea/
+.settings/
+
+passfile.txt
 
 # Package Files #
 *.jar

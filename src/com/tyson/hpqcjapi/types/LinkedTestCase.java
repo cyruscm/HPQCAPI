@@ -31,6 +31,7 @@ public class LinkedTestCase implements java.io.Serializable {
 	public String name;
 	public String id;
 	public String testId;
+	public String runStepId;
 	public TestStatus status;
 	public String systemOut;
 	public String systemErr;
