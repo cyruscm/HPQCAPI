@@ -64,7 +64,8 @@ public class JUnitPosterTest{
 			} 
 			
 			username = System.getProperty("testUser");
-			username = System.getProperty("testPass");
+			password = System.getProperty("testPass");
+			Logger.logWarning("USER: " + username + " -- Password: " + password);
 			
 		} catch (IOException e) {
 			Logger.logError("A passfile.txt is expected to run tests. This has a username on the first line and password on the second line.");
@@ -98,7 +99,7 @@ public class JUnitPosterTest{
 			
 			
 		} else {
-			throw(new IllegalArgumentException());
+			throw(new IllegalArgumentException("Config preperation resulted in error."));
 		}
 	}
 
@@ -137,7 +138,7 @@ public class JUnitPosterTest{
 			// and and use prefix + increment for tests.
 			
 		} else {
-			throw(new IllegalArgumentException());
+			throw(new IllegalArgumentException("Config preperation resulted in error."));
 		}
 	}
 
@@ -171,7 +172,7 @@ public class JUnitPosterTest{
 			} catch (IllegalArgumentException e) {
 			}	
 		} else {
-			throw(new IllegalArgumentException());
+			throw(new IllegalArgumentException("Config preperation resulted in error."));
 		}
 	}
 
@@ -210,7 +211,7 @@ public class JUnitPosterTest{
 			}
 			
 		} else {
-			throw(new IllegalArgumentException());
+			throw(new IllegalArgumentException("Config preperation resulted in error."));
 		}		
 	}
 
@@ -257,7 +258,7 @@ public class JUnitPosterTest{
 			
 			
 		} else {
-			throw(new IllegalArgumentException());
+			throw(new IllegalArgumentException("Config preperation resulted in error."));
 		}
 	}
 	
