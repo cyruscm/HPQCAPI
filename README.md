@@ -38,7 +38,7 @@ These values all associate to possible command line arguments,
 
 #### CLI Args
 ```
-HPQCJAPI [...] [JUNITPATH] [TEST_NAME]
+HPQCJAPI [...] [JUNITPATH]
  -d,--domain <arg>          The domain in ALM to connect to. (defaults to PROJECTS)
  -D,--project <arg>         The project name to connect to (defaults to SR23428_EnterpriseWaterMgmtSys)
  -f,--testsetfolder <arg>   The test set folder id to use (defaults to 1018, Unit Testing)
