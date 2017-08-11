@@ -34,8 +34,6 @@ import com.tyson.hpqcjapi.utils.Logger;
  */
 public class HPQCJAPI {
 	
-	public static boolean valid_input = true;
-	
 	public static void main(String[] args) throws Exception {
 		try {
 			if (prepareSteps(args)) {
@@ -52,6 +50,7 @@ public class HPQCJAPI {
 		}
 	}
 	
+	
 	/**
 	 * Prepares all needed configs and steps.
 	 * @return True if ready, false if not.
@@ -63,17 +62,15 @@ public class HPQCJAPI {
 		System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 	
 		List<String> finalArgs = initConfig(args);
-		if (!valid_input) { 
+		if (finalArgs == null) { 
 			return false; 
 		}
 		
 		if (finalArgs.size() > 1) {
 			Logger.logError("There are too many arguments. Expecting only JUnit Output path");
-			valid_input = false;
 			return false;
 		} else if (finalArgs.size() < 1) {
 			Logger.logError("There are not enough arguments. Expecting JUnit output path");
-			valid_input = false;
 			return false;
 		} else {
 			Config.setJunitPath(finalArgs.get(0));
@@ -99,8 +96,7 @@ public class HPQCJAPI {
 		} catch (ParseException e) {
 			Logger.logError(e.getLocalizedMessage());
 			Logger.logError("Use option -h for help on arguments");
-			valid_input = false;
-			return new ArrayList<String>();
+			return null;
 		}
 		
 		
@@ -117,7 +113,7 @@ public class HPQCJAPI {
 				parFlags.add(o.getLongOpt());
 			}
 		}
-
+		
 		Config.initConfigs(parArgs, parFlags);
 		
 		
@@ -125,7 +121,7 @@ public class HPQCJAPI {
 			if (Config.getTestName() == null || Config.getTestName().isEmpty()) {
 				Logger.logDebug("id:" + Config.getTestId() + " -- Name: " + Config.getTestName());
 				Logger.logError("You must either give a test id (--testId [id]) or set a test name (--testName [name])");
-				valid_input = false;
+				return null;
 			}
 		}
 		

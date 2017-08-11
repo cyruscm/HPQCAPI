@@ -33,7 +33,7 @@ public class JUnitPosterTest{
 
 	private static String password = "";
 	private static String username = "";
-	private static String ARG_STRING = "-d PROJECTS -D Big_Data_API -v -s 103 -u %s -p %s %s test_resources/sampleJunit.xml";
+	private static String ARG_STRING = "-d PROJECTS -D Big_Data_API -v -s 103 -u %s -p %s %s sampleJunit.xml";
 	private static final String TESTSETID = "103";
 	private static final String HPQCJAPIFEATURETESTID = "45";
 	private static final String TESTINSTANCEID = "37";
@@ -62,8 +62,6 @@ public class JUnitPosterTest{
 			Logger.logError("A passfile.txt is expected to run tests. This has a username on the first line and password on the second line.");
 			throw(e);
 		}
-		
-
 	}
 
 	/**
@@ -74,7 +72,7 @@ public class JUnitPosterTest{
 		username = "";
 		password = "";
 	}
-
+	
 	/**
 	 * Test method for {@link com.tyson.hpqcjapi.TestingJUnitPoster#TestingJUnitPoster(com.tyson.hpqcjapi.JUnitReader)}.
 	 * @throws JAXBException 

@@ -69,7 +69,7 @@ public class JUnitReaderTest{
 	public void MultiParseTest() {
 		try {
 			JUnitReader reader = new JUnitReader(SAMPLEJUNIT);
-			for (int i = 0; i < 50; i++) {
+			for (int i = 0; i < 10; i++) {
 				assertTrue(validateSampleJunit(reader.parseSuites()));
 			}
 		} catch (Exception e) {

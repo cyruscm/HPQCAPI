@@ -104,7 +104,7 @@ public class JUnitPoster {
 				return createTest(name);
 			} else {
 				Logger.logError("You have not set --createTest flag. We cannot create a test.");
-				throw(new IllegalArgumentException());
+				throw(new IllegalArgumentException("No test exists with test name " + name + "and --createTest is not set." ));
 			}
 		}
 	}
@@ -135,7 +135,7 @@ public class JUnitPoster {
 
 		Logger.logError(
 				"There is no way to get a valid Test with your provided paramaters. Tool could not complete. Please add a valid Test Name or Test ID. To find a valid Test id, open ALM and go to Test Plan then right click the desired Test and select Properties. The ID is located in the top left of the popup window.");
-		throw(new IllegalArgumentException());
+		throw(new IllegalArgumentException("Provided arguments of testId and/or testName were not valid"));
 	}
 	
 	private boolean verifyTestIdExists(String id) throws Exception {
@@ -281,10 +281,12 @@ public class JUnitPoster {
 				Logger.logError(
 						"No runs have been executed on the supplied ALM server, so no TesetSet can be determined");
 			}
+		} else {
+			Logger.log("You did not set guessTestSet to true, cannot automatically find a test set.");
 		}
 		Logger.logError(
 				"There is no way to get a valid TestSet with your provided paramaters. Tool could not complete. Please add a valid TestSet Name or TestSet ID. To find a valid TestSet id, open ALM and go to Test Lab then right click the desired TestSet and select Properties. The ID is located in the top left of the popup window.");
-		throw(new IllegalArgumentException());
+		throw(new IllegalArgumentException("Provided TestSetId and/or TestSetName were not valid."));
 	}
 
 	

@@ -4,21 +4,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.tyson.hpqcjapi.HPQCJAPI;
 import com.tyson.hpqcjapi.resources.Config;
 import com.tyson.hpqcjapi.resources.Constants;
-import com.tyson.hpqcjapi.utils.Logger;
 
 public class HPQCJAPITest {
 
@@ -39,7 +33,6 @@ public class HPQCJAPITest {
 		for (Map.Entry<String[], Boolean> entry : testStrings.entrySet()) {
 			try {
 				str = "Failure: I was expecting arg input %s to return %b but it didn't.";
-				HPQCJAPI.valid_input = true;
 				assertTrue(String.format(str, utils.joinStringArray(entry.getKey()), entry.getValue()) + "\n"  /** outContent.toString() **/, HPQCJAPI.prepareSteps(entry.getKey()) == entry.getValue());
 			} catch (Exception e) {
 				fail(utils.getStackStrace(e));
@@ -50,7 +43,6 @@ public class HPQCJAPITest {
 	
 	@Test
 	public void ConfigSetsParams() {
-		HPQCJAPI.valid_input = true;
 		try {
 			HPQCJAPI.prepareSteps("-u User -p Pass -S Name -s ID -H Host -P Port -d Domain -D Project -T Team -t ID -f FolderId -n TestName -g -c -v".split("\\s+"));
 		} catch (Exception e) {
