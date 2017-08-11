@@ -1,5 +1,4 @@
 # HPQCJAPI
-rebuild test
 
 HPQCJAPI Syncs JUnit standard XML files into HP ALM QC.
 
