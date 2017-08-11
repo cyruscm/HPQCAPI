@@ -37,6 +37,16 @@
           <includes>
             <include>${runSuite}</include>
           </includes>
+           <systemProperties>
+              <property>
+                 <name>testUser</name>
+                 <value>${testuser}</value>
+              </property>
+              <property>
+                 <name>testPass</name>
+                 <value>${testpass}</value>
+              </property>
+          </systemProperties>
         </configuration>
       </plugin>
     </plugins>

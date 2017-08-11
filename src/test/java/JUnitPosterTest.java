@@ -8,6 +8,7 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
@@ -50,14 +51,21 @@ public class JUnitPosterTest{
 	@BeforeClass
 	public static void setUpClass() throws IOException, ParseException, HPALMRestException, JAXBException {
 		try {
-			List<String> passLines = Files.readAllLines((Paths.get("passfile.txt")));
-			if (passLines.size() != 2) {
-				Logger.logError("A passfile.txt is expected with only 2 lines. The first line is a username, the second is a password.");
-				throw(new IllegalArgumentException());
-			} else {
-				username = passLines.get(0);
-				password = passLines.get(1);
-			}
+			Path passFile = Paths.get("passfile.txt");
+			if (Files.exists(passFile)) {
+				List<String> passLines = Files.readAllLines((Paths.get("passfile.txt")));
+				if (passLines.size() == 2) {
+					username = passLines.get(0);
+					password = passLines.get(1);
+					return;
+				} else {
+					Logger.logError("A passfile.txt is expected with only 2 lines. The first line is a username, the second is a password.");
+				}
+			} 
+			
+			username = System.getProperty("testUser");
+			username = System.getProperty("testPass");
+			
 		} catch (IOException e) {
 			Logger.logError("A passfile.txt is expected to run tests. This has a username on the first line and password on the second line.");
 			throw(e);
