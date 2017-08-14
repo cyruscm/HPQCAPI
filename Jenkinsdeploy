@@ -1,0 +1,1 @@
+mvn deploy -DaltDeploymentRepository=TalendNexus::default::http://whqlhdpt006.tyson.com:8081/nexus/content/repositories/hpqcjapi/
