@@ -13,7 +13,6 @@
 bin/
 .project
 config.properties
-sampleJunit.xml
 .classpath
 .settings/
 .project
